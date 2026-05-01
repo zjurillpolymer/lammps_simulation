@@ -1,0 +1,38 @@
+read_restart merge.restart
+
+# 上帝模式，安全插入离子
+kspace_style none
+pair_style zero 10.0
+pair_coeff * *
+
+# 插入 Na+ 和 Cl-（新类型 9、10）
+create_atoms 9 random 10 12345 NULL  # Na+
+create_atoms 10 random 10 54321 NULL  # Cl-
+
+group Na type 9
+group Cl type 10
+group Ions union Na Cl
+
+# 删除重叠水分子
+delete_atoms overlap 2.2 H2O Ions mol yes
+
+# 恢复力场
+pair_style lj/cut/coul/long 10.0 10.0
+include parameters.inc
+kspace_style pppm 1e-5
+
+# 平衡
+minimize 1e-4 1e-6 1000 10000
+fix relax all nve/limit 0.1
+timestep 0.1
+run 1000
+unfix relax
+
+# 正式模拟
+fix mynpt all npt temp 300 300 100 x 1 1 1000
+fix myrct PEG recenter 0 0 0 shift all
+thermo 500
+timestep 1.0
+run 10000
+
+write_restart final_nacl.restart

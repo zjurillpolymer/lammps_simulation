@@ -1,0 +1,1 @@
+ERROR on proc 0: Cannot open input script /Users/arcadio/lammps_simulation/Nanosheared_electrolyte/equilibrate.lmp: No such file or directory (src/lammps.cpp:565)

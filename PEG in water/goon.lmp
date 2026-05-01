@@ -1,0 +1,54 @@
+read_restart water.restart
+
+# --- 第一阶段：上帝模式 (无力争扎) ---
+
+# 1. 彻底切断所有力场关联
+kspace_style none
+pair_style zero 10.0 
+pair_coeff * *
+
+# 2. 插入 PEG 分子
+molecule pegmol peg.mol
+create_atoms 0 single 0 0 0 mol pegmol 454756
+group PEG type C CPos H HC OAlc OE
+
+# 3. 安全删除
+delete_atoms overlap 2.0 H2O PEG mol yes
+
+# --- 第二阶段：恢复物理世界 ---
+
+# 4. 【关键修正】先恢复势函数风格
+# 虽然 restart 文件里存了风格，但你刚才用 zero 覆盖了它
+# 所以必须在这里重新声明，告诉 LAMMPS 接下来要读 LJ 参数
+pair_style lj/cut/coul/long 10.0 10.0
+
+# 5. 再读取参数文件
+# 此时 LAMMPS 已经准备好接收 LJ 参数了，不会报错
+include parameters.inc
+
+# 6. 重新开启长程库仑力
+kspace_style pppm 1e-5
+
+# 7. 最小化
+minimize 1.0e-4 1.0e-6 1000 10000
+
+# 8. 动力学弛豫
+fix mynve all nve/limit 0.1
+timestep 0.1
+run 1000
+unfix mynve
+# 9. 正式模拟
+fix mynpt all npt temp 300 300 100 x 1 1 1000
+fix myrct PEG recenter 0 0 0 shift all
+# dump viz PEG image 250 myimage-*.ppm type type size 1100 600 box no 0.1 shiny 0.1 view 0 90 zoom 3.3 fsaa yes bond atom 0.8
+
+# 3. dump_modify 保持不变
+# 这里定义了原子颜色，因为只画 PEG，所以 OW (水氧) 的设置其实没用了，可以删掉
+dump_modify viz backcolor white acolor OE darkred adiam OE 2.6 acolor HC white adiam HC 1.4 &
+    acolor H white adiam H 1.4 acolor CPos gray adiam CPos 2.8 acolor C gray  adiam C 2.8 &
+    acolor OAlc darkred adiam OAlc 2.6
+thermo 500
+timestep 1.0
+run 10000
+
+write_restart merge.restart

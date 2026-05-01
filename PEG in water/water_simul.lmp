@@ -1,0 +1,47 @@
+units real
+atom_style full
+bond_style harmonic
+angle_style harmonic
+dihedral_style harmonic
+pair_style lj/cut/coul/long 10
+kspace_style ewald 1e-5
+
+special_bonds lj 0.0 0.0 0.5 coul 0.0 0.0 1.0 angle yes #angle yes就是说如果在mol文件里定义了angle，就按harmonic角势计算，反之就按前面的权重计算
+
+region box block -30 30 -15 15 -15 15
+
+#8-原子总数 box是region的名称 extra是动态成化学键的空间
+create_box 8 box bond/types 7 angle/types 8 dihedral/types 4 extra/bond/per/atom 3 &
+    extra/angle/per/atom 6 extra/dihedral/per/atom 10 extra/special/per/atom 14
+
+
+#起别名，7是OW，8是HW
+labelmap atom 7 OW 8 HW
+
+labelmap bond 7 OW-HW
+
+labelmap angle 8 HW-OW-HW
+
+include parameters.inc
+
+molecule h2omol water.mol
+
+#0指的是不指定原子类型，因为在mol文件里已经定义了 NULL不限制区域 mol按分子模板 每个分子原子最短距离是1A
+create_atoms 0 random 700 87910 NULL mol h2omol 454756 overlap 1.0 maxtry 50 units box
+
+#组合水分子
+group H2O type OW HW
+
+
+minimize 1.0e-4 1.0e-6 100 1000
+dump            mytrack all custom 500 trajectory.lammpstrj id type xu yu zu
+
+reset_timestep 0
+
+fix mynpt all npt temp 300 300 100 iso 1 1 1000
+thermo 500
+thermo_style custom step temp etotal vol density
+timestep 1.0
+run 15000
+
+write_restart water.restart

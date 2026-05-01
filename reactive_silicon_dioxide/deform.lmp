@@ -1,0 +1,33 @@
+units real
+atom_style full
+
+read_data relax.data
+
+pair_style reaxff NULL safezone 3.0 mincap 150
+pair_coeff * * ffield.reax.CHOFe Si O
+fix myqeq all qeq/reaxff 1 0.0 10.0 1.0e-6 reaxff maxiter 400
+
+group grpSi type Si
+group grpO type O
+variable qSi equal charge(grpSi)/count(grpSi)
+variable qO equal charge(grpO)/count(grpO)
+variable vq atom q
+
+thermo 200
+thermo_style custom step temp etotal press vol v_qSi v_qO
+dump mydmp all custom 1000 trajectory.lammpstrj id type x y z
+
+
+fix myhis1 grpSi ave/histo 10 500 5000 -1.5 2.5 1000 v_vq file deform-Si.histo mode vector
+fix myhis2 grpO ave/histo 10 500 5000 -1.5 2.5 1000 v_vq file deform-O.histo mode vector
+fix myspec all reaxff/species 5 1 5 deform.species element Si O
+fix mynvt all nvt temp 300.0 300.0 100
+timestep 0.5
+
+run 5000
+
+fix mydef all deform 1 x erate 5e-5
+
+run 10000
+
+write_data deform.data nofix

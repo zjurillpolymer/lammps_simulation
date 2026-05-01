@@ -1,0 +1,43 @@
+# 1. 设置长程静电
+kspace_style pppm 1e-5
+read_restart merge.restart
+
+# 2. 定义拉伸组
+group ends type OAlc
+variable xcm equal xcm(ends,x)
+variable oxies atom type==label2type(atom,OAlc)
+variable end1 atom v_oxies*(x>v_xcm)
+variable end2 atom v_oxies*(x<v_xcm)
+group topull1 variable end1
+group topull2 variable end2
+
+# 3. 可视化 (建议降低频率以节省时间，例如 1000)
+# dump viz all image 1000 myimage-*.ppm type type shiny 0.1 box no 0.01 &
+#     view 0 90 zoom 3.3 fsaa yes bond atom 0.8 size 1100 600
+# dump_modify viz backcolor white acolor OW red acolor HW white acolor OE darkred acolor OAlc darkred acolor C gray acolor CPos gray &
+#     acolor H white acolor HC white adiam OW 0.2 adiam HW 0.2 adiam C 2.8 adiam CPos 2.8 adiam OAlc 2.6 adiam H 1.4 adiam HC 1.4 adiam OE 2.6
+
+timestep 1.0
+# 控温
+fix mynvt all nvt temp 300 300 100
+
+# 【删除 fix recenter】
+# 如果担心整体漂移，可以用下面这行代替（每100步消除一次整体动量）：
+fix momentum all momentum 100 linear 1 1 1
+
+# 计算属性
+compute rgyr PEG gyration
+compute dphi PEG dihedral/local phi
+
+# 热力学输出
+thermo_style custom step temp etotal c_rgyr 
+thermo 250
+
+
+fix myaf1 topull1 addforce 10 0 0
+fix myaf2 topull2 addforce -10 0 0
+
+
+dump mydmp all local 100 pull.dat index c_dphi
+
+run 15000

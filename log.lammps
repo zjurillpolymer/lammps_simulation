@@ -1,0 +1,3724 @@
+LAMMPS (22 Jul 2025 - Update 3)
+
+units metal
+boundary p p p
+atom_style full
+neighbor 1.0 bin
+neigh_modify delay 1
+pair_style hybrid/overlay vashishta lj/cut/tip4p/long 3 4 1 1 0.1546 10
+kspace_style pppm/tip4p 1.0e-4
+bond_style harmonic
+angle_style harmonic
+
+read_data dilatedSiO.data
+Reading data file ...
+  orthogonal box = (-5.5120844 -0.1277123 3.2117524) to (26.097662 20.71329 17.373825)
+  1 by 1 by 1 MPI processor grid
+  reading atoms ...
+  576 atoms
+  reading velocities ...
+  576 velocities
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0       
+  special bond factors coul:  0        0        0       
+     0 = max # of 1-2 neighbors
+     0 = max # of 1-3 neighbors
+     0 = max # of 1-4 neighbors
+     3 = max # of special neighbors
+  special bonds CPU = 0.000 seconds
+  read_data CPU = 0.002 seconds
+molecule h2omol H2O.mol
+Read molecule template h2omol:
+# LAMMPS input script by Simon Gravelle
+  1 molecules
+  0 fragments
+  0 bodies
+  3 atoms with max type 4
+  2 bonds with max type 1
+  1 angles with max type 1
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule co2mol CO2.mol
+Read molecule template co2mol:
+# LAMMPS input script by Simon Gravelle
+  1 molecules
+  0 fragments
+  0 bodies
+  3 atoms with max type 6
+  2 bonds with max type 2
+  1 angles with max type 2
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+create_atoms 0 random 5 456415 NULL mol h2omol 454756 overlap 2.0 maxtry 50
+WARNING: Only inserted 4 particles out of 5 (src/create_atoms.cpp:937)
+Created 12 atoms
+  using lattice units in orthogonal box = (-5.5120844 -0.1277123 3.2117524) to (26.097662 20.71329 17.373825)
+  create_atoms CPU = 0.005 seconds
+create_atoms 0 random 5 373823 NULL mol co2mol 989812 overlap 2.0 maxtry 50
+Created 15 atoms
+  using lattice units in orthogonal box = (-5.5120844 -0.1277123 3.2117524) to (26.097662 20.71329 17.373825)
+  create_atoms CPU = 0.001 seconds
+
+group SiO type 1 2
+576 atoms in group SiO
+group H2O type 3 4
+12 atoms in group H2O
+group CO2 type 5 6
+15 atoms in group CO2
+
+pair_coeff * * vashishta /Users/arcadio/lammps_simulation/SiO.1990.vashishta Si O NULL NULL NULL NULL
+Reading vashishta potential file /Users/arcadio/lammps_simulation/SiO.1990.vashishta with DATE: 2015-10-14
+pair_coeff * * lj/cut/tip4p/long 0 0
+pair_coeff 1 3 lj/cut/tip4p/long 0.0057 4.42 # epsilonSi = 0.00403, sigmaSi = 3.69
+pair_coeff 1 5 lj/cut/tip4p/long 0.01096 3.158 # epsilonSi = 0.00403, sigmaSi = 3.69
+pair_coeff 1 6 lj/cut/tip4p/long 0.007315 3.2507 # epsilonSi = 0.00403, sigmaSi = 3.69
+pair_coeff 2 3 lj/cut/tip4p/long 0.0043 3.12 # epsilonO = 0.0023, sigmaO = 3.091
+pair_coeff 2 5 lj/cut/tip4p/long 0.0101 2.858 # epsilonO = 0.0023, sigmaO = 3.091
+pair_coeff 2 6 lj/cut/tip4p/long 0.0065 2.9512 # epsilonO = 0.0023, sigmaO = 3.091
+pair_coeff 3 3 lj/cut/tip4p/long 0.008 3.1589
+pair_coeff 3 5 lj/cut/tip4p/long 0.01295 2.8924
+pair_coeff 3 6 lj/cut/tip4p/long 0.0093 2.985
+pair_coeff 4 4 lj/cut/tip4p/long 0.0 0.0
+pair_coeff 5 5 lj/cut/tip4p/long 0.0179 2.625854
+pair_coeff 6 6 lj/cut/tip4p/long 0.0106 2.8114421
+
+bond_coeff 1 0 0.9572
+bond_coeff 2 46.121 1.17
+angle_coeff 1 0 104.52
+angle_coeff 2 2.0918 180
+
+variable oxygen atom "type==3"
+group oxygen dynamic all var oxygen
+dynamic group oxygen defined
+variable nO equal count(oxygen)
+fix myat1 all ave/time 100 1 100 v_nO file numberH2Omolecule.dat
+
+variable carbon atom "type==5"
+group carbon dynamic all var carbon
+dynamic group carbon defined
+variable nC equal count(carbon)
+fix myat2 all ave/time 100 1 100 v_nC file numberCO2molecule.dat
+
+fix shak H2O shake 1.0e-4 200 0 b 1 a 1 mol h2omol
+Finding SHAKE clusters ...
+       0 = # of size 2 clusters
+       0 = # of size 3 clusters
+       0 = # of size 4 clusters
+       4 = # of frozen angles
+  find clusters CPU = 0.000 seconds
+
+dump dmp all atom 100 dump.init.lammpstrj
+
+compute_modify thermo_temp dynamic/dof yes
+
+compute ctH2O H2O temp
+compute_modify ctH2O dynamic/dof yes
+fix mynvt1 H2O nvt temp 300 300 0.1
+fix_modify mynvt1 temp ctH2O
+WARNING: Temperature for fix modify is not for group all (src/fix_nh.cpp:1402)
+
+compute ctCO2 CO2 temp
+compute_modify ctCO2 dynamic/dof yes
+fix mynvt2 CO2 nvt temp 300 300 0.1
+fix_modify mynvt2 temp ctCO2
+WARNING: Temperature for fix modify is not for group all (src/fix_nh.cpp:1402)
+
+compute ctSiO SiO temp
+fix mynvt3 SiO nvt temp 300 300 0.1
+fix_modify mynvt3 temp ctSiO
+WARNING: Temperature for fix modify is not for group all (src/fix_nh.cpp:1402)
+
+timestep 0.001
+thermo 100
+run 5000
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160519
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012221328
+  estimated relative force accuracy = 8.4872426e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+WARNING: Communication cutoff 0 is shorter than a bond length based estimate of 2.755. This may lead to errors. (src/comm.cpp:743)
+WARNING: Increasing communication cutoff to 12.1118 for TIP4P pair style (src/KSPACE/pair_lj_cut_tip4p_long.cpp:497)
+Neighbor list info ...
+  update: every = 1 steps, delay = 1 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 11.3092
+  ghost atom cutoff = 12.1118
+  binsize = 5.6546, bins = 6 4 3
+  3 neighbor lists, perpetual/occasional/extra = 3 0 0
+  (1) pair vashishta, perpetual, skip from (3)
+      attributes: full, newton on
+      pair build: skip
+      stencil: none
+      bin: none
+  (2) pair lj/cut/tip4p/long, perpetual, half/full from (3)
+      attributes: half, newton on, cut 11.3092
+      pair build: halffull/newton
+      stencil: none
+      bin: none
+  (3) neighbor class addition, perpetual
+      attributes: full, newton on
+      pair build: full/bin
+      stencil: full/bin/3d
+      bin: standard
+Per MPI rank memory allocation (min/avg/max) = 12.09 | 12.09 | 12.09 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+         0   307.09667     -7360.1637      0.00035375223 -7336.4255     -150648.31    
+       100   429.89463     -7383.5374      0.18201352    -7350.1255     -62938.7      
+       200   388.12924     -7390.3596      0.080483395   -7360.2777     -51069.868    
+       300   351.37452     -7395.1505      0.074994841   -7367.9151     -50862.498    
+       400   308.54127     -7397.8008      0.046277856   -7373.9051     -44367.793    
+       500   289.7887      -7399.724       0.13933266    -7377.1847     -44927.576    
+       600   289.02544     -7400.4         0.11797882    -7377.9411     -48696.346    
+       700   301.73772     -7400.2186      0.090346048   -7376.8046     -51253.579    
+       800   299.71494     -7398.3974      0.059002508   -7375.1712     -53894.417    
+       900   306.35515     -7397.5635      0.077130099   -7373.8058     -51507.63     
+      1000   308.00531     -7397.9071      0.082987819   -7374.0161     -54530.882    
+      1100   310.16198     -7400.2421      0.11701257    -7376.1503     -52566.368    
+      1200   291.4816      -7400.1814      0.17030726    -7377.4803     -45734.679    
+      1300   281.6344      -7399.1118      0.12817058    -7377.214      -53006.037    
+      1400   298.42112     -7398.9046      0.14318197    -7375.6942     -50018.456    
+      1500   302.37897     -7397.8027      0.1461216     -7374.2835     -48354.408    
+      1600   303.45792     -7397.8941      0.11637113    -7374.3211     -47595.394    
+      1700   296.87699     -7398.4624      0.096171962   -7375.4183     -54210.639    
+      1800   305.82407     -7400.5163      0.072563343   -7376.8043     -47661.791    
+      1900   285.74623     -7399.3576      0.062821484   -7377.2073     -48604.563    
+      2000   305.7387      -7399.7658      0.11459043    -7376.0183     -50002.746    
+      2100   292.18059     -7397.4873      0.14900656    -7374.7534     -49791.915    
+      2200   315.36999     -7398.8952      0.14819809    -7374.3697     -46644.409    
+      2300   296.71688     -7398.4436      0.071799714   -7375.4363     -51133.193    
+      2400   302.52707     -7400.3425      0.129498      -7376.8284     -49878.26     
+      2500   288.45637     -7399.7195      0.072346833   -7377.3502     -55605.004    
+      2600   306.12755     -7399.8933      0.22208263    -7376.0083     -52876        
+      2700   305.9142      -7397.6238      0.10864396    -7373.8688     -49548.799    
+      2800   319.95277     -7399.0124      0.12166349    -7374.1591     -47188.386    
+      2900   292.80312     -7397.9649      0.086971116   -7375.245      -47395.403    
+      3000   298.93687     -7399.2008      0.13470152    -7375.959      -43878.288    
+      3100   301.37973     -7400.0849      0.13693544    -7376.652      -53322.614    
+      3200   291.04703     -7399.6279      0.22422823    -7376.9064     -51605.077    
+      3300   302.0129      -7399.2432      0.14805816    -7375.7503     -50939.067    
+      3400   312.39242     -7399.0337      0.084486141   -7374.802      -45558.581    
+      3500   300.06619     -7398.3885      0.11869165    -7375.0754     -46299.734    
+      3600   293.60262     -7399.4073      0.060225769   -7376.6523     -51257.495    
+      3700   292.02436     -7400.8332      0.062172453   -7378.1983     -48456.272    
+      3800   306.31139     -7401.5214      0.093386351   -7377.7509     -54960.559    
+      3900   300.8554      -7400.2035      0.098907641   -7376.8492     -50364.977    
+      4000   298.5752      -7399.5169      0.11122002    -7376.3265     -51393.883    
+      4100   286.61822     -7398.1839      0.10814532    -7375.9208     -50670.425    
+      4200   291.4239      -7397.893       0.091901269   -7375.2747     -53726.89     
+      4300   305.2236      -7398.1508      0.12886749    -7374.4289     -46639.152    
+      4400   308.22613     -7398.4234      0.091877267   -7374.5064     -48453.006    
+      4500   293.46474     -7398.9921      0.13207605    -7376.1759     -52115.396    
+      4600   298.16774     -7400.024       0.072008022   -7376.9044     -46603.044    
+      4700   279.92194     -7398.2503      0.12281546    -7376.4902     -51996.1      
+      4800   297.02227     -7398.4193      0.13075518    -7375.3294     -43975.853    
+      4900   302.24461     -7397.7228      0.19951111    -7374.1605     -50115.409    
+      5000   320.46477     -7399.4894      0.2113786     -7374.5069     -50575.895    
+Loop time of 21.1603 on 1 procs for 5000 steps with 603 atoms
+
+Performance: 20.416 ns/day, 1.176 hours/ns, 236.291 timesteps/s, 142.484 katom-step/s
+99.3% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 19.46      | 19.46      | 19.46      |   0.0 | 91.96
+Bond    | 0.0011571  | 0.0011571  | 0.0011571  |   0.0 |  0.01
+Kspace  | 0.70315    | 0.70315    | 0.70315    |   0.0 |  3.32
+Neigh   | 0.77834    | 0.77834    | 0.77834    |   0.0 |  3.68
+Comm    | 0.047857   | 0.047857   | 0.047857   |   0.0 |  0.23
+Output  | 0.0087386  | 0.0087386  | 0.0087386  |   0.0 |  0.04
+Modify  | 0.15496    | 0.15496    | 0.15496    |   0.0 |  0.73
+Other   |            | 0.006316   |            |       |  0.03
+
+Nlocal:            603 ave         603 max         603 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           5807 ave        5807 max        5807 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         120224 ave      120224 max      120224 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 120224
+Ave neighs/atom = 199.37645
+Ave special neighs/atom = 0.089552239
+Neighbor list builds = 205
+Dangerous builds = 0
+
+variable tfac equal 5.0/3.0
+variable xlo equal xlo+0.1
+variable xhi equal xhi-0.1
+variable ylo equal ylo+0.1
+variable yhi equal yhi-0.1
+variable zlo equal zlo+0.1
+variable zhi equal zhi-0.1
+region system block ${xlo} ${xhi} ${ylo} ${yhi} ${zlo} ${zhi}
+region system block -5.41208443850745 ${xhi} ${ylo} ${yhi} ${zlo} ${zhi}
+region system block -5.41208443850745 25.997662150106 ${ylo} ${yhi} ${zlo} ${zhi}
+region system block -5.41208443850745 25.997662150106 -0.0277123020783719 ${yhi} ${zlo} ${zhi}
+region system block -5.41208443850745 25.997662150106 -0.0277123020783719 20.6132900136781 ${zlo} ${zhi}
+region system block -5.41208443850745 25.997662150106 -0.0277123020783719 20.6132900136781 3.31175239308856 ${zhi}
+region system block -5.41208443850745 25.997662150106 -0.0277123020783719 20.6132900136781 3.31175239308856 17.2738253185131
+
+label loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160519
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012221328
+  estimated relative force accuracy = 8.4872426e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.12 | 13.12 | 13.12 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      5000   320.46477     -7399.4894      0.2113786     -7374.5069     -50575.902    
+      5100   308.63136     -7399.0487      0.093334857   -7375.0989     -50220.017    
+      5200   307.16069     -7400.4734      0.16391752    -7376.4079     -52945.464    
+      5300   291.98551     -7400.4316      0.07670115    -7377.6341     -49998.315    
+      5400   287.48961     -7400.5962      0.10613683    -7378.1192     -45288.477    
+      5500   318.02458     -7401.5304      0.1183429     -7376.5007     -49522.395    
+Loop time of 6.27116 on 1 procs for 500 steps with 615 atoms
+
+Performance: 6.889 ns/day, 3.484 hours/ns, 79.730 timesteps/s, 49.034 katom-step/s
+99.4% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 1.9709     | 1.9709     | 1.9709     |   0.0 | 31.43
+Bond    | 0.00014513 | 0.00014513 | 0.00014513 |   0.0 |  0.00
+Kspace  | 0.071261   | 0.071261   | 0.071261   |   0.0 |  1.14
+Neigh   | 0.13228    | 0.13228    | 0.13228    |   0.0 |  2.11
+Comm    | 0.0051335  | 0.0051335  | 0.0051335  |   0.0 |  0.08
+Output  | 0.00086513 | 0.00086513 | 0.00086513 |   0.0 |  0.01
+Modify  | 4.0899     | 4.0899     | 4.0899     |   0.0 | 65.22
+Other   |            | 0.0006677  |            |       |  0.01
+
+Nlocal:            615 ave         615 max         615 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           5955 ave        5955 max        5955 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         124326 ave      124326 max      124326 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 124326
+Ave neighs/atom = 202.1561
+Ave special neighs/atom = 0.12682927
+Neighbor list builds = 536
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160715
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012350828
+  estimated relative force accuracy = 8.5771756e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      5500   318.02458     -7401.5304      0.1183429     -7376.5007     -49522.573    
+      5600   300.9532      -7399.2662      0.12702108    -7375.5651     -55340.184    
+      5700   307.19472     -7400.6532      0.17435133    -7376.4158     -47646.313    
+      5800   299.20822     -7402.1091      0.18342118    -7378.3722     -50773.85     
+      5900   312.28934     -7403.9198      0.21305575    -7378.8813     -48961.679    
+      6000   302.36351     -7403.0922      0.11870734    -7378.9371     -51954.187    
+Loop time of 6.43405 on 1 procs for 500 steps with 624 atoms
+
+Performance: 6.714 ns/day, 3.574 hours/ns, 77.712 timesteps/s, 48.492 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.006      | 2.006      | 2.006      |   0.0 | 31.18
+Bond    | 0.00022425 | 0.00022425 | 0.00022425 |   0.0 |  0.00
+Kspace  | 0.07179    | 0.07179    | 0.07179    |   0.0 |  1.12
+Neigh   | 0.15079    | 0.15079    | 0.15079    |   0.0 |  2.34
+Comm    | 0.0053689  | 0.0053689  | 0.0053689  |   0.0 |  0.08
+Output  | 0.00088838 | 0.00088838 | 0.00088838 |   0.0 |  0.01
+Modify  | 4.1983     | 4.1983     | 4.1983     |   0.0 | 65.25
+Other   |            | 0.0006837  |            |       |  0.01
+
+Nlocal:            624 ave         624 max         624 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           5999 ave        5999 max        5999 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         127401 ave      127401 max      127401 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 127401
+Ave neighs/atom = 204.16827
+Ave special neighs/atom = 0.15384615
+Neighbor list builds = 539
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160708
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012346334
+  estimated relative force accuracy = 8.5740542e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      6000   302.36351     -7403.0922      0.11870734    -7378.9371     -51954.148    
+      6100   305.92101     -7402.7773      0.11639117    -7378.3417     -44373.271    
+      6200   300.9135      -7401.5193      0.13071315    -7377.4675     -51789.954    
+      6300   312.98808     -7400.8751      0.13938961    -7375.8547     -52584.974    
+      6400   305.66046     -7400.9319      0.14702996    -7376.4864     -49173.817    
+      6500   303.47827     -7402.5869      0.1346591     -7378.3272     -46392.537    
+Loop time of 6.5492 on 1 procs for 500 steps with 624 atoms
+
+Performance: 6.596 ns/day, 3.638 hours/ns, 76.345 timesteps/s, 47.639 katom-step/s
+99.1% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0276     | 2.0276     | 2.0276     |   0.0 | 30.96
+Bond    | 0.00023942 | 0.00023942 | 0.00023942 |   0.0 |  0.00
+Kspace  | 0.087625   | 0.087625   | 0.087625   |   0.0 |  1.34
+Neigh   | 0.16046    | 0.16046    | 0.16046    |   0.0 |  2.45
+Comm    | 0.0054085  | 0.0054085  | 0.0054085  |   0.0 |  0.08
+Output  | 0.00089854 | 0.00089854 | 0.00089854 |   0.0 |  0.01
+Modify  | 4.2662     | 4.2662     | 4.2662     |   0.0 | 65.14
+Other   |            | 0.0006904  |            |       |  0.01
+
+Nlocal:            624 ave         624 max         624 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           5984 ave        5984 max        5984 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         127511 ave      127511 max      127511 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 127511
+Ave neighs/atom = 204.34455
+Ave special neighs/atom = 0.15384615
+Neighbor list builds = 541
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160708
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012346334
+  estimated relative force accuracy = 8.5740542e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      6500   303.47827     -7402.5869      0.1346591     -7378.3272     -46392.566    
+      6600   297.69214     -7402.6883      0.10835976    -7378.9149     -51712.735    
+      6700   286.44912     -7402.4937      0.13888938    -7379.5836     -51746.674    
+      6800   313.64261     -7403.7648      0.10694402    -7378.7248     -54464.84     
+      6900   319.4656      -7402.9734      0.22606315    -7377.2275     -48770.772    
+      7000   303.81313     -7401.8104      0.20906946    -7377.3319     -53650.174    
+Loop time of 6.60305 on 1 procs for 500 steps with 627 atoms
+
+Performance: 6.542 ns/day, 3.668 hours/ns, 75.723 timesteps/s, 47.478 katom-step/s
+99.4% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.07       | 2.07       | 2.07       |   0.0 | 31.35
+Bond    | 0.0003342  | 0.0003342  | 0.0003342  |   0.0 |  0.01
+Kspace  | 0.074343   | 0.074343   | 0.074343   |   0.0 |  1.13
+Neigh   | 0.13814    | 0.13814    | 0.13814    |   0.0 |  2.09
+Comm    | 0.00548    | 0.00548    | 0.00548    |   0.0 |  0.08
+Output  | 0.00093846 | 0.00093846 | 0.00093846 |   0.0 |  0.01
+Modify  | 4.3131     | 4.3131     | 4.3131     |   0.0 | 65.32
+Other   |            | 0.0007402  |            |       |  0.01
+
+Nlocal:            627 ave         627 max         627 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6027 ave        6027 max        6027 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         128570 ave      128570 max      128570 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 128570
+Ave neighs/atom = 205.05582
+Ave special neighs/atom = 0.16267943
+Neighbor list builds = 535
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160706
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012344992
+  estimated relative force accuracy = 8.5731228e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      7000   303.81313     -7401.8104      0.20906946    -7377.3319     -53650.227    
+      7100   289.70456     -7403.3968      0.18149875    -7380.0729     -48135.83     
+      7200   291.615       -7403.8368      0.23235187    -7380.3094     -53818.507    
+      7300   296.49561     -7403.3552      0.21603362    -7379.4543     -49215.788    
+      7400   297.08505     -7402.2487      0.20278314    -7378.314      -44790.495    
+      7500   313.95398     -7403.1339      0.19420014    -7377.8602     -49223.514    
+Loop time of 6.58262 on 1 procs for 500 steps with 627 atoms
+
+Performance: 6.563 ns/day, 3.657 hours/ns, 75.958 timesteps/s, 47.625 katom-step/s
+99.4% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0406     | 2.0406     | 2.0406     |   0.0 | 31.00
+Bond    | 0.00027892 | 0.00027892 | 0.00027892 |   0.0 |  0.00
+Kspace  | 0.07335    | 0.07335    | 0.07335    |   0.0 |  1.11
+Neigh   | 0.14399    | 0.14399    | 0.14399    |   0.0 |  2.19
+Comm    | 0.0054301  | 0.0054301  | 0.0054301  |   0.0 |  0.08
+Output  | 0.00093479 | 0.00093479 | 0.00093479 |   0.0 |  0.01
+Modify  | 4.3173     | 4.3173     | 4.3173     |   0.0 | 65.59
+Other   |            | 0.0007127  |            |       |  0.01
+
+Nlocal:            627 ave         627 max         627 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6049 ave        6049 max        6049 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         128669 ave      128669 max      128669 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 128669
+Ave neighs/atom = 205.21372
+Ave special neighs/atom = 0.16267943
+Neighbor list builds = 537
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160706
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012344992
+  estimated relative force accuracy = 8.5731228e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      7500   313.95398     -7403.1339      0.19420014    -7377.8602     -49223.542    
+      7600   317.31584     -7404.2096      0.19628862    -7378.6652     -48872.65     
+      7700   300.20062     -7404.7407      0.23008647    -7380.5297     -53189.089    
+      7800   302.05415     -7405.2229      0.30650957    -7380.7875     -55047.399    
+      7900   292.66944     -7403.9792      0.21983412    -7380.2666     -47518.56     
+      8000   301.96755     -7403.3785      0.40484157    -7378.7345     -45472.282    
+Loop time of 6.59238 on 1 procs for 500 steps with 630 atoms
+
+Performance: 6.553 ns/day, 3.662 hours/ns, 75.845 timesteps/s, 47.782 katom-step/s
+99.4% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.037      | 2.037      | 2.037      |   0.0 | 30.90
+Bond    | 0.00029025 | 0.00029025 | 0.00029025 |   0.0 |  0.00
+Kspace  | 0.073021   | 0.073021   | 0.073021   |   0.0 |  1.11
+Neigh   | 0.13178    | 0.13178    | 0.13178    |   0.0 |  2.00
+Comm    | 0.0053211  | 0.0053211  | 0.0053211  |   0.0 |  0.08
+Output  | 0.00089771 | 0.00089771 | 0.00089771 |   0.0 |  0.01
+Modify  | 4.3434     | 4.3434     | 4.3434     |   0.0 | 65.89
+Other   |            | 0.0007163  |            |       |  0.01
+
+Nlocal:            630 ave         630 max         630 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6008 ave        6008 max        6008 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         129862 ave      129862 max      129862 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 129862
+Ave neighs/atom = 206.13016
+Ave special neighs/atom = 0.17142857
+Neighbor list builds = 534
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160704
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012343728
+  estimated relative force accuracy = 8.5722447e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      8000   301.96755     -7403.3785      0.40484157    -7378.7345     -45472.271    
+      8100   299.50922     -7403.0062      0.35663922    -7378.6078     -48913.879    
+      8200   290.6813      -7403.38        0.35891065    -7379.688      -50735.901    
+      8300   301.13292     -7404.4456      0.27177495    -7380.0017     -42805.651    
+      8400   295.96898     -7404.3954      0.23136992    -7380.3299     -55779.919    
+      8500   300.73913     -7404.6457      0.34596285    -7380.0815     -47245.278    
+Loop time of 6.56917 on 1 procs for 500 steps with 633 atoms
+
+Performance: 6.576 ns/day, 3.650 hours/ns, 76.113 timesteps/s, 48.180 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.05       | 2.05       | 2.05       |   0.0 | 31.21
+Bond    | 0.00030437 | 0.00030437 | 0.00030437 |   0.0 |  0.00
+Kspace  | 0.073807   | 0.073807   | 0.073807   |   0.0 |  1.12
+Neigh   | 0.13243    | 0.13243    | 0.13243    |   0.0 |  2.02
+Comm    | 0.0053074  | 0.0053074  | 0.0053074  |   0.0 |  0.08
+Output  | 0.00091517 | 0.00091517 | 0.00091517 |   0.0 |  0.01
+Modify  | 4.3057     | 4.3057     | 4.3057     |   0.0 | 65.54
+Other   |            | 0.0007125  |            |       |  0.01
+
+Nlocal:            633 ave         633 max         633 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6042 ave        6042 max        6042 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         130892 ave      130892 max      130892 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 130892
+Ave neighs/atom = 206.78041
+Ave special neighs/atom = 0.18009479
+Neighbor list builds = 534
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160751
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012375882
+  estimated relative force accuracy = 8.594574e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      8500   300.73913     -7404.6457      0.34596285    -7380.0815     -47245.297    
+      8600   308.64225     -7404.261       0.31785217    -7379.0885     -48446.279    
+      8700   312.77768     -7404.1567      0.38675112    -7378.5822     -52754.81     
+      8800   296.46078     -7404.029       0.34448423    -7379.8109     -49024.935    
+      8900   301.55454     -7405.7769      0.53916472    -7380.8369     -46164.858    
+      9000   303.24713     -7406.1342      0.49148592    -7381.105      -43396.569    
+Loop time of 6.67983 on 1 procs for 500 steps with 636 atoms
+
+Performance: 6.467 ns/day, 3.711 hours/ns, 74.852 timesteps/s, 47.606 katom-step/s
+99.3% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0665     | 2.0665     | 2.0665     |   0.0 | 30.94
+Bond    | 0.00033966 | 0.00033966 | 0.00033966 |   0.0 |  0.01
+Kspace  | 0.074285   | 0.074285   | 0.074285   |   0.0 |  1.11
+Neigh   | 0.13515    | 0.13515    | 0.13515    |   0.0 |  2.02
+Comm    | 0.0054381  | 0.0054381  | 0.0054381  |   0.0 |  0.08
+Output  | 0.00091458 | 0.00091458 | 0.00091458 |   0.0 |  0.01
+Modify  | 4.3965     | 4.3965     | 4.3965     |   0.0 | 65.82
+Other   |            | 0.0007431  |            |       |  0.01
+
+Nlocal:            636 ave         636 max         636 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6071 ave        6071 max        6071 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         132168 ave      132168 max      132168 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 132168
+Ave neighs/atom = 207.81132
+Ave special neighs/atom = 0.18867925
+Neighbor list builds = 534
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160749
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012374689
+  estimated relative force accuracy = 8.5937456e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      9000   303.24713     -7406.1342      0.49148592    -7381.105      -43396.531    
+      9100   303.07987     -7405.4493      0.41367825    -7380.5113     -53342.157    
+      9200   302.67762     -7403.8251      0.3459848     -7378.9874     -52035.43     
+      9300   309.37342     -7403.7756      0.30909512    -7378.433      -50305.396    
+      9400   316.84464     -7405.7642      0.43948855    -7379.6866     -51101.013    
+      9500   303.75586     -7405.4719      0.44371599    -7380.4492     -44685.234    
+Loop time of 6.70776 on 1 procs for 500 steps with 636 atoms
+
+Performance: 6.440 ns/day, 3.727 hours/ns, 74.541 timesteps/s, 47.408 katom-step/s
+99.4% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0645     | 2.0645     | 2.0645     |   0.0 | 30.78
+Bond    | 0.00033391 | 0.00033391 | 0.00033391 |   0.0 |  0.00
+Kspace  | 0.074607   | 0.074607   | 0.074607   |   0.0 |  1.11
+Neigh   | 0.13614    | 0.13614    | 0.13614    |   0.0 |  2.03
+Comm    | 0.0053857  | 0.0053857  | 0.0053857  |   0.0 |  0.08
+Output  | 0.0009465  | 0.0009465  | 0.0009465  |   0.0 |  0.01
+Modify  | 4.4251     | 4.4251     | 4.4251     |   0.0 | 65.97
+Other   |            | 0.0007247  |            |       |  0.01
+
+Nlocal:            636 ave         636 max         636 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6053 ave        6053 max        6053 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         131980 ave      131980 max      131980 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 131980
+Ave neighs/atom = 207.51572
+Ave special neighs/atom = 0.18867925
+Neighbor list builds = 534
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160749
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012374689
+  estimated relative force accuracy = 8.5937456e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+      9500   303.75586     -7405.4719      0.44371599    -7380.4492     -44685.223    
+      9600   297.84826     -7405.7422      0.2999844     -7381.3413     -50624.291    
+      9700   299.55088     -7406.4809      0.37511237    -7381.8671     -48437.973    
+      9800   292.00991     -7405.7485      0.43859712    -7381.6814     -51638.118    
+      9900   297.5523      -7404.9068      0.59678452    -7380.233      -46440.054    
+     10000   305.09592     -7404.327       0.34884242    -7379.2908     -52576.052    
+Loop time of 6.60119 on 1 procs for 500 steps with 636 atoms
+
+Performance: 6.544 ns/day, 3.667 hours/ns, 75.744 timesteps/s, 48.173 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0467     | 2.0467     | 2.0467     |   0.0 | 31.00
+Bond    | 0.00028442 | 0.00028442 | 0.00028442 |   0.0 |  0.00
+Kspace  | 0.07382    | 0.07382    | 0.07382    |   0.0 |  1.12
+Neigh   | 0.11958    | 0.11958    | 0.11958    |   0.0 |  1.81
+Comm    | 0.0050927  | 0.0050927  | 0.0050927  |   0.0 |  0.08
+Output  | 0.00091216 | 0.00091216 | 0.00091216 |   0.0 |  0.01
+Modify  | 4.3542     | 4.3542     | 4.3542     |   0.0 | 65.96
+Other   |            | 0.0006686  |            |       |  0.01
+
+Nlocal:            636 ave         636 max         636 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6088 ave        6088 max        6088 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         132098 ave      132098 max      132098 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 132098
+Ave neighs/atom = 207.70126
+Ave special neighs/atom = 0.18867925
+Neighbor list builds = 531
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160749
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012374689
+  estimated relative force accuracy = 8.5937456e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     10000   305.09592     -7404.327       0.34884242    -7379.2908     -52575.975    
+     10100   313.08412     -7405.1495      0.51124239    -7379.3045     -52322.996    
+     10200   287.4018      -7405.4455      0.40950029    -7381.7804     -47558.778    
+     10300   304.0697      -7407.2691      0.52677777    -7382.1379     -46260.452    
+     10400   283.97638     -7404.7346      0.52414283    -7381.232      -50050.063    
+     10500   309.43739     -7405.2384      0.55369472    -7379.646      -50159.556    
+Loop time of 6.67459 on 1 procs for 500 steps with 636 atoms
+
+Performance: 6.472 ns/day, 3.708 hours/ns, 74.911 timesteps/s, 47.643 katom-step/s
+99.4% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0523     | 2.0523     | 2.0523     |   0.0 | 30.75
+Bond    | 0.00029095 | 0.00029095 | 0.00029095 |   0.0 |  0.00
+Kspace  | 0.073852   | 0.073852   | 0.073852   |   0.0 |  1.11
+Neigh   | 0.14867    | 0.14867    | 0.14867    |   0.0 |  2.23
+Comm    | 0.0053588  | 0.0053588  | 0.0053588  |   0.0 |  0.08
+Output  | 0.00093342 | 0.00093342 | 0.00093342 |   0.0 |  0.01
+Modify  | 4.3925     | 4.3925     | 4.3925     |   0.0 | 65.81
+Other   |            | 0.0006983  |            |       |  0.01
+
+Nlocal:            636 ave         636 max         636 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6047 ave        6047 max        6047 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         132144 ave      132144 max      132144 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 132144
+Ave neighs/atom = 207.77358
+Ave special neighs/atom = 0.18867925
+Neighbor list builds = 537
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160749
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012374689
+  estimated relative force accuracy = 8.5937456e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     10500   309.43739     -7405.2384      0.55369472    -7379.646      -50159.517    
+     10600   317.07736     -7406.0421      0.60385591    -7379.6584     -51964.06     
+     10700   307.22485     -7407.6318      0.3718933     -7382.2811     -49957.43     
+     10800   283.43051     -7407.4286      0.42180225    -7383.8527     -47988.913    
+     10900   303.39354     -7408.1343      0.5010271     -7382.8483     -47382.936    
+     11000   299.18587     -7406.5889      0.33296862    -7381.8147     -48444.802    
+Loop time of 6.85481 on 1 procs for 500 steps with 642 atoms
+
+Performance: 6.302 ns/day, 3.808 hours/ns, 72.941 timesteps/s, 46.828 katom-step/s
+99.2% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0792     | 2.0792     | 2.0792     |   0.0 | 30.33
+Bond    | 0.00035359 | 0.00035359 | 0.00035359 |   0.0 |  0.01
+Kspace  | 0.074642   | 0.074642   | 0.074642   |   0.0 |  1.09
+Neigh   | 0.16492    | 0.16492    | 0.16492    |   0.0 |  2.41
+Comm    | 0.0055405  | 0.0055405  | 0.0055405  |   0.0 |  0.08
+Output  | 0.00093321 | 0.00093321 | 0.00093321 |   0.0 |  0.01
+Modify  | 4.5285     | 4.5285     | 4.5285     |   0.0 | 66.06
+Other   |            | 0.0007134  |            |       |  0.01
+
+Nlocal:            642 ave         642 max         642 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6083 ave        6083 max        6083 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         134277 ave      134277 max      134277 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 134277
+Ave neighs/atom = 209.15421
+Ave special neighs/atom = 0.20560748
+Neighbor list builds = 539
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160746
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012372524
+  estimated relative force accuracy = 8.5922423e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     11000   299.18587     -7406.5889      0.33296862    -7381.8147     -48444.783    
+     11100   315.27683     -7407.1704      0.40315136    -7381.0115     -49845.097    
+     11200   304.68994     -7406.5488      0.40585016    -7381.2521     -51972.974    
+     11300   290.41919     -7407.7431      0.36170667    -7383.6564     -52270.858    
+     11400   283.87125     -7407.4366      0.44284495    -7383.8037     -53977.364    
+     11500   295.26976     -7407.5204      0.63742657    -7382.7617     -52148.578    
+Loop time of 6.81474 on 1 procs for 500 steps with 642 atoms
+
+Performance: 6.339 ns/day, 3.786 hours/ns, 73.370 timesteps/s, 47.104 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0681     | 2.0681     | 2.0681     |   0.0 | 30.35
+Bond    | 0.00031845 | 0.00031845 | 0.00031845 |   0.0 |  0.00
+Kspace  | 0.074004   | 0.074004   | 0.074004   |   0.0 |  1.09
+Neigh   | 0.16009    | 0.16009    | 0.16009    |   0.0 |  2.35
+Comm    | 0.0054494  | 0.0054494  | 0.0054494  |   0.0 |  0.08
+Output  | 0.0009285  | 0.0009285  | 0.0009285  |   0.0 |  0.01
+Modify  | 4.5052     | 4.5052     | 4.5052     |   0.0 | 66.11
+Other   |            | 0.0006952  |            |       |  0.01
+
+Nlocal:            642 ave         642 max         642 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6126 ave        6126 max        6126 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         134309 ave      134309 max      134309 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 134309
+Ave neighs/atom = 209.20405
+Ave special neighs/atom = 0.20560748
+Neighbor list builds = 538
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160746
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012372524
+  estimated relative force accuracy = 8.5922423e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     11500   295.26976     -7407.5204      0.63742657    -7382.7617     -52148.6      
+     11600   297.35095     -7406.4518      0.46797951    -7381.6925     -55065.013    
+     11700   298.87905     -7405.9833      0.52181443    -7381.0454     -46764.403    
+     11800   298.11198     -7405.9197      0.58323905    -7380.983      -50414.4      
+     11900   290.68731     -7407.0464      0.52108724    -7382.7784     -53010.503    
+     12000   290.96648     -7408.0876      0.73090687    -7383.4741     -52822.514    
+Loop time of 6.80695 on 1 procs for 500 steps with 645 atoms
+
+Performance: 6.346 ns/day, 3.782 hours/ns, 73.454 timesteps/s, 47.378 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0671     | 2.0671     | 2.0671     |   0.0 | 30.37
+Bond    | 0.00032699 | 0.00032699 | 0.00032699 |   0.0 |  0.00
+Kspace  | 0.073837   | 0.073837   | 0.073837   |   0.0 |  1.08
+Neigh   | 0.14583    | 0.14583    | 0.14583    |   0.0 |  2.14
+Comm    | 0.0053225  | 0.0053225  | 0.0053225  |   0.0 |  0.08
+Output  | 0.00091942 | 0.00091942 | 0.00091942 |   0.0 |  0.01
+Modify  | 4.5129     | 4.5129     | 4.5129     |   0.0 | 66.30
+Other   |            | 0.0007052  |            |       |  0.01
+
+Nlocal:            645 ave         645 max         645 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6163 ave        6163 max        6163 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         135487 ave      135487 max      135487 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 135487
+Ave neighs/atom = 210.05736
+Ave special neighs/atom = 0.21395349
+Neighbor list builds = 535
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160745
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001237155
+  estimated relative force accuracy = 8.5915661e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     12000   290.96648     -7408.0876      0.73090687    -7383.4741     -52822.661    
+     12100   292.08565     -7406.7647      0.55901293    -7382.2312     -51184.93     
+     12200   309.04289     -7407.4407      0.77697854    -7381.2974     -48610.522    
+     12300   300.81863     -7406.7289      0.51733932    -7381.5203     -44931.926    
+     12400   300.18021     -7407.1818      0.58740507    -7381.9555     -50058.644    
+     12500   307.50208     -7407.532       0.43367139    -7381.8585     -52185.873    
+Loop time of 6.8468 on 1 procs for 500 steps with 645 atoms
+
+Performance: 6.310 ns/day, 3.804 hours/ns, 73.027 timesteps/s, 47.102 katom-step/s
+99.4% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0735     | 2.0735     | 2.0735     |   0.0 | 30.28
+Bond    | 0.00034496 | 0.00034496 | 0.00034496 |   0.0 |  0.01
+Kspace  | 0.074524   | 0.074524   | 0.074524   |   0.0 |  1.09
+Neigh   | 0.14737    | 0.14737    | 0.14737    |   0.0 |  2.15
+Comm    | 0.005422   | 0.005422   | 0.005422   |   0.0 |  0.08
+Output  | 0.00093362 | 0.00093362 | 0.00093362 |   0.0 |  0.01
+Modify  | 4.544      | 4.544      | 4.544      |   0.0 | 66.37
+Other   |            | 0.000737   |            |       |  0.01
+
+Nlocal:            645 ave         645 max         645 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6169 ave        6169 max        6169 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         135491 ave      135491 max      135491 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 135491
+Ave neighs/atom = 210.06357
+Ave special neighs/atom = 0.21395349
+Neighbor list builds = 535
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160745
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001237155
+  estimated relative force accuracy = 8.5915661e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     12500   307.50208     -7407.532       0.43367139    -7381.8585     -52185.837    
+     12600   303.6383      -7407.5194      0.52276469    -7382.074      -50302.19     
+     12700   288.50556     -7406.909       0.54439675    -7382.684      -50732.323    
+     12800   283.53598     -7406.29        0.52844828    -7382.4889     -49247.268    
+     12900   301.87065     -7407.0699      0.66466354    -7381.6276     -45070.569    
+     13000   299.79063     -7406.0437      0.71807671    -7380.7187     -49875.663    
+Loop time of 6.77831 on 1 procs for 500 steps with 645 atoms
+
+Performance: 6.373 ns/day, 3.766 hours/ns, 73.765 timesteps/s, 47.578 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0664     | 2.0664     | 2.0664     |   0.0 | 30.49
+Bond    | 0.00032334 | 0.00032334 | 0.00032334 |   0.0 |  0.00
+Kspace  | 0.074188   | 0.074188   | 0.074188   |   0.0 |  1.09
+Neigh   | 0.14018    | 0.14018    | 0.14018    |   0.0 |  2.07
+Comm    | 0.0052877  | 0.0052877  | 0.0052877  |   0.0 |  0.08
+Output  | 0.00092225 | 0.00092225 | 0.00092225 |   0.0 |  0.01
+Modify  | 4.4903     | 4.4903     | 4.4903     |   0.0 | 66.25
+Other   |            | 0.0006759  |            |       |  0.01
+
+Nlocal:            645 ave         645 max         645 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6153 ave        6153 max        6153 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         135463 ave      135463 max      135463 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 135463
+Ave neighs/atom = 210.02016
+Ave special neighs/atom = 0.21395349
+Neighbor list builds = 534
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160745
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001237155
+  estimated relative force accuracy = 8.5915661e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     13000   299.79063     -7406.0437      0.71807671    -7380.7187     -49875.65     
+     13100   307.88367     -7405.6712      0.57870917    -7379.8214     -45634.366    
+     13200   308.65496     -7406.3416      0.75426667    -7380.2529     -47291.154    
+     13300   288.71676     -7406.4752      0.58214138    -7382.1951     -50383.568    
+     13400   297.45694     -7407.8211      0.6596408     -7382.7461     -46382.476    
+     13500   297.6395      -7407.4906      0.55025438    -7382.51       -50983.441    
+Loop time of 6.81384 on 1 procs for 500 steps with 645 atoms
+
+Performance: 6.340 ns/day, 3.785 hours/ns, 73.380 timesteps/s, 47.330 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0703     | 2.0703     | 2.0703     |   0.0 | 30.38
+Bond    | 0.00032703 | 0.00032703 | 0.00032703 |   0.0 |  0.00
+Kspace  | 0.074409   | 0.074409   | 0.074409   |   0.0 |  1.09
+Neigh   | 0.16054    | 0.16054    | 0.16054    |   0.0 |  2.36
+Comm    | 0.0053914  | 0.0053914  | 0.0053914  |   0.0 |  0.08
+Output  | 0.00092096 | 0.00092096 | 0.00092096 |   0.0 |  0.01
+Modify  | 4.5013     | 4.5013     | 4.5013     |   0.0 | 66.06
+Other   |            | 0.0006993  |            |       |  0.01
+
+Nlocal:            645 ave         645 max         645 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6139 ave        6139 max        6139 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         135482 ave      135482 max      135482 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 135482
+Ave neighs/atom = 210.04961
+Ave special neighs/atom = 0.21395349
+Neighbor list builds = 538
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160745
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001237155
+  estimated relative force accuracy = 8.5915661e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     13500   297.6395      -7407.4906      0.55025438    -7382.51       -50983.478    
+     13600   302.68678     -7407.1393      0.54296538    -7381.7517     -47861.335    
+     13700   295.82257     -7405.7768      0.53203037    -7380.9636     -52227.415    
+     13800   306.67064     -7405.5452      0.42060481    -7379.953      -52551.718    
+     13900   298.38192     -7406.3618      0.63895999    -7381.1158     -50440.934    
+     14000   312.60152     -7408.6723      0.48299848    -7382.4097     -52446.1      
+Loop time of 6.75706 on 1 procs for 500 steps with 648 atoms
+
+Performance: 6.393 ns/day, 3.754 hours/ns, 73.997 timesteps/s, 47.950 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0628     | 2.0628     | 2.0628     |   0.0 | 30.53
+Bond    | 0.0003295  | 0.0003295  | 0.0003295  |   0.0 |  0.00
+Kspace  | 0.074381   | 0.074381   | 0.074381   |   0.0 |  1.10
+Neigh   | 0.14876    | 0.14876    | 0.14876    |   0.0 |  2.20
+Comm    | 0.005379   | 0.005379   | 0.005379   |   0.0 |  0.08
+Output  | 0.00091525 | 0.00091525 | 0.00091525 |   0.0 |  0.01
+Modify  | 4.4639     | 4.4639     | 4.4639     |   0.0 | 66.06
+Other   |            | 0.0006881  |            |       |  0.01
+
+Nlocal:            648 ave         648 max         648 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6201 ave        6201 max        6201 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         136607 ave      136607 max      136607 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 136607
+Ave neighs/atom = 210.81327
+Ave special neighs/atom = 0.22222222
+Neighbor list builds = 536
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160743
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012370648
+  estimated relative force accuracy = 8.5909394e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     14000   312.60152     -7408.6723      0.48299848    -7382.4097     -52446.088    
+     14100   289.71765     -7407.4904      0.58097416    -7383.017      -49090.025    
+     14200   300.85712     -7408.3871      0.82010363    -7382.756      -43121.118    
+     14300   310.98462     -7408.1663      0.53628237    -7381.9838     -46310.087    
+     14400   302.60092     -7406.9159      0.73078965    -7381.2302     -54008.882    
+     14500   300.42915     -7407.1849      0.48084936    -7381.9283     -49671.665    
+Loop time of 6.82074 on 1 procs for 500 steps with 648 atoms
+
+Performance: 6.334 ns/day, 3.789 hours/ns, 73.306 timesteps/s, 47.502 katom-step/s
+99.3% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0928     | 2.0928     | 2.0928     |   0.0 | 30.68
+Bond    | 0.00036563 | 0.00036563 | 0.00036563 |   0.0 |  0.01
+Kspace  | 0.074846   | 0.074846   | 0.074846   |   0.0 |  1.10
+Neigh   | 0.15628    | 0.15628    | 0.15628    |   0.0 |  2.29
+Comm    | 0.0055505  | 0.0055505  | 0.0055505  |   0.0 |  0.08
+Output  | 0.00093521 | 0.00093521 | 0.00093521 |   0.0 |  0.01
+Modify  | 4.4892     | 4.4892     | 4.4892     |   0.0 | 65.82
+Other   |            | 0.0007122  |            |       |  0.01
+
+Nlocal:            648 ave         648 max         648 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6152 ave        6152 max        6152 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         136653 ave      136653 max      136653 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 136653
+Ave neighs/atom = 210.88426
+Ave special neighs/atom = 0.22222222
+Neighbor list builds = 537
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160743
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012370648
+  estimated relative force accuracy = 8.5909394e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     14500   300.42915     -7407.1849      0.48084936    -7381.9283     -49671.677    
+     14600   307.72214     -7408.532       0.69152052    -7382.4632     -53277.623    
+     14700   291.00814     -7407.1867      0.59581076    -7382.592      -49660.799    
+     14800   297.60051     -7408.0095      0.65108517    -7382.8159     -51438.502    
+     14900   302.65251     -7408.1246      0.69899962    -7382.4664     -44571.776    
+     15000   304.32146     -7406.9816      0.56460934    -7381.3202     -47476.784    
+Loop time of 6.8162 on 1 procs for 500 steps with 648 atoms
+
+Performance: 6.338 ns/day, 3.787 hours/ns, 73.355 timesteps/s, 47.534 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0852     | 2.0852     | 2.0852     |   0.0 | 30.59
+Bond    | 0.00034912 | 0.00034912 | 0.00034912 |   0.0 |  0.01
+Kspace  | 0.074208   | 0.074208   | 0.074208   |   0.0 |  1.09
+Neigh   | 0.16337    | 0.16337    | 0.16337    |   0.0 |  2.40
+Comm    | 0.0055197  | 0.0055197  | 0.0055197  |   0.0 |  0.08
+Output  | 0.00092054 | 0.00092054 | 0.00092054 |   0.0 |  0.01
+Modify  | 4.4859     | 4.4859     | 4.4859     |   0.0 | 65.81
+Other   |            | 0.0007023  |            |       |  0.01
+
+Nlocal:            648 ave         648 max         648 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6176 ave        6176 max        6176 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         136661 ave      136661 max      136661 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 136661
+Ave neighs/atom = 210.8966
+Ave special neighs/atom = 0.22222222
+Neighbor list builds = 539
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160743
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012370648
+  estimated relative force accuracy = 8.5909394e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     15000   304.32146     -7406.9816      0.56460934    -7381.3202     -47476.787    
+     15100   315.16682     -7406.8473      0.66134243    -7380.1948     -50532.91     
+     15200   296.08738     -7406.4446      0.61306277    -7381.4138     -49216.161    
+     15300   296.06165     -7408.3413      0.5271519     -7383.3985     -47061.557    
+     15400   290.78293     -7408.2436      0.55528488    -7383.7081     -54580.612    
+     15500   303.50993     -7408.2385      0.49143287    -7382.7172     -49883.67     
+Loop time of 6.76101 on 1 procs for 500 steps with 648 atoms
+
+Performance: 6.390 ns/day, 3.756 hours/ns, 73.953 timesteps/s, 47.922 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.079      | 2.079      | 2.079      |   0.0 | 30.75
+Bond    | 0.0003537  | 0.0003537  | 0.0003537  |   0.0 |  0.01
+Kspace  | 0.074371   | 0.074371   | 0.074371   |   0.0 |  1.10
+Neigh   | 0.15244    | 0.15244    | 0.15244    |   0.0 |  2.25
+Comm    | 0.005391   | 0.005391   | 0.005391   |   0.0 |  0.08
+Output  | 0.00090979 | 0.00090979 | 0.00090979 |   0.0 |  0.01
+Modify  | 4.4479     | 4.4479     | 4.4479     |   0.0 | 65.79
+Other   |            | 0.0006858  |            |       |  0.01
+
+Nlocal:            648 ave         648 max         648 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6152 ave        6152 max        6152 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         136619 ave      136619 max      136619 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 136619
+Ave neighs/atom = 210.83179
+Ave special neighs/atom = 0.22222222
+Neighbor list builds = 537
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160743
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012370648
+  estimated relative force accuracy = 8.5909394e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     15500   303.50993     -7408.2385      0.49143287    -7382.7172     -49883.672    
+     15600   299.49993     -7406.4625      0.56389337    -7381.1995     -43905.922    
+     15700   301.84851     -7405.1326      0.56395853    -7379.6758     -49625.86     
+     15800   329.10014     -7405.9791      0.58864885    -7378.2503     -53303.811    
+     15900   312.36906     -7406.6615      0.60549762    -7380.2956     -48159.166    
+     16000   306.9527      -7408.14        0.6708272     -7382.1554     -47533.86     
+Loop time of 6.75174 on 1 procs for 500 steps with 648 atoms
+
+Performance: 6.398 ns/day, 3.751 hours/ns, 74.055 timesteps/s, 47.988 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0773     | 2.0773     | 2.0773     |   0.0 | 30.77
+Bond    | 0.00034154 | 0.00034154 | 0.00034154 |   0.0 |  0.01
+Kspace  | 0.074075   | 0.074075   | 0.074075   |   0.0 |  1.10
+Neigh   | 0.14711    | 0.14711    | 0.14711    |   0.0 |  2.18
+Comm    | 0.0053205  | 0.0053205  | 0.0053205  |   0.0 |  0.08
+Output  | 0.00091417 | 0.00091417 | 0.00091417 |   0.0 |  0.01
+Modify  | 4.446      | 4.446      | 4.446      |   0.0 | 65.85
+Other   |            | 0.0006745  |            |       |  0.01
+
+Nlocal:            648 ave         648 max         648 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6158 ave        6158 max        6158 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         136592 ave      136592 max      136592 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 136592
+Ave neighs/atom = 210.79012
+Ave special neighs/atom = 0.22222222
+Neighbor list builds = 536
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160743
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012370648
+  estimated relative force accuracy = 8.5909394e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     16000   306.9527      -7408.14        0.6708272     -7382.1554     -47533.874    
+     16100   293.62927     -7407.716       0.68886766    -7382.8121     -45706.03     
+     16200   292.97636     -7408.2143      0.73218223    -7383.3209     -48762.127    
+     16300   294.21016     -7408.0296      0.37614448    -7383.3906     -47236.884    
+     16400   311.10073     -7408.1804      0.49232214    -7382.0322     -46558.983    
+     16500   309.70717     -7406.8644      0.48451472    -7380.839      -51187.366    
+Loop time of 6.76267 on 1 procs for 500 steps with 648 atoms
+
+Performance: 6.388 ns/day, 3.757 hours/ns, 73.935 timesteps/s, 47.910 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0722     | 2.0722     | 2.0722     |   0.0 | 30.64
+Bond    | 0.00033924 | 0.00033924 | 0.00033924 |   0.0 |  0.01
+Kspace  | 0.074283   | 0.074283   | 0.074283   |   0.0 |  1.10
+Neigh   | 0.14819    | 0.14819    | 0.14819    |   0.0 |  2.19
+Comm    | 0.0053166  | 0.0053166  | 0.0053166  |   0.0 |  0.08
+Output  | 0.00091929 | 0.00091929 | 0.00091929 |   0.0 |  0.01
+Modify  | 4.4608     | 4.4608     | 4.4608     |   0.0 | 65.96
+Other   |            | 0.0006846  |            |       |  0.01
+
+Nlocal:            648 ave         648 max         648 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6127 ave        6127 max        6127 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         136529 ave      136529 max      136529 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 136529
+Ave neighs/atom = 210.6929
+Ave special neighs/atom = 0.22222222
+Neighbor list builds = 536
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160743
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012370648
+  estimated relative force accuracy = 8.5909394e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     16500   309.70717     -7406.8644      0.48451472    -7380.839      -51187.391    
+     16600   299.56913     -7406.9452      0.72266353    -7381.5177     -53450.454    
+     16700   286.83495     -7408.2482      0.76023786    -7383.8332     -45270.089    
+     16800   307.21151     -7410.0017      0.58805962    -7384.0785     -53515.691    
+     16900   290.685       -7407.8291      0.75345998    -7383.1034     -49972.363    
+     17000   312.09668     -7407.9211      0.55428369    -7381.6288     -53258.652    
+Loop time of 6.78726 on 1 procs for 500 steps with 648 atoms
+
+Performance: 6.365 ns/day, 3.771 hours/ns, 73.667 timesteps/s, 47.737 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0721     | 2.0721     | 2.0721     |   0.0 | 30.53
+Bond    | 0.00033329 | 0.00033329 | 0.00033329 |   0.0 |  0.00
+Kspace  | 0.074026   | 0.074026   | 0.074026   |   0.0 |  1.09
+Neigh   | 0.13645    | 0.13645    | 0.13645    |   0.0 |  2.01
+Comm    | 0.0052438  | 0.0052438  | 0.0052438  |   0.0 |  0.08
+Output  | 0.00091762 | 0.00091762 | 0.00091762 |   0.0 |  0.01
+Modify  | 4.4975     | 4.4975     | 4.4975     |   0.0 | 66.26
+Other   |            | 0.0006661  |            |       |  0.01
+
+Nlocal:            648 ave         648 max         648 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6108 ave        6108 max        6108 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         136624 ave      136624 max      136624 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 136624
+Ave neighs/atom = 210.83951
+Ave special neighs/atom = 0.22222222
+Neighbor list builds = 533
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160743
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012370648
+  estimated relative force accuracy = 8.5909394e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     17000   312.09668     -7407.9211      0.55428369    -7381.6288     -53258.609    
+     17100   308.88898     -7407.7049      0.6395628     -7381.5919     -47128.482    
+     17200   292.23922     -7408.2775      0.62813489    -7383.549      -42744.297    
+     17300   293.48933     -7408.6764      0.7168915     -7383.756      -49003.633    
+     17400   307.36929     -7408.649       0.54527254    -7382.7556     -51150.367    
+     17500   309.20513     -7407.9653      0.73354385    -7381.7322     -49658.547    
+Loop time of 6.79076 on 1 procs for 500 steps with 648 atoms
+
+Performance: 6.362 ns/day, 3.773 hours/ns, 73.629 timesteps/s, 47.712 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0712     | 2.0712     | 2.0712     |   0.0 | 30.50
+Bond    | 0.00033831 | 0.00033831 | 0.00033831 |   0.0 |  0.00
+Kspace  | 0.074329   | 0.074329   | 0.074329   |   0.0 |  1.09
+Neigh   | 0.15001    | 0.15001    | 0.15001    |   0.0 |  2.21
+Comm    | 0.0053139  | 0.0053139  | 0.0053139  |   0.0 |  0.08
+Output  | 0.00093988 | 0.00093988 | 0.00093988 |   0.0 |  0.01
+Modify  | 4.488      | 4.488      | 4.488      |   0.0 | 66.09
+Other   |            | 0.000671   |            |       |  0.01
+
+Nlocal:            648 ave         648 max         648 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6133 ave        6133 max        6133 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         136566 ave      136566 max      136566 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 136566
+Ave neighs/atom = 210.75
+Ave special neighs/atom = 0.22222222
+Neighbor list builds = 536
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160743
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012370648
+  estimated relative force accuracy = 8.5909394e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     17500   309.20513     -7407.9653      0.73354385    -7381.7322     -49658.541    
+     17600   310.52765     -7407.7052      0.60306848    -7381.4936     -49049.07     
+     17700   304.42386     -7408.3279      0.66712508    -7382.5555     -49360.087    
+     17800   302.13716     -7409.219       0.70867304    -7383.5937     -49038.239    
+     17900   297.55264     -7408.4011      0.70029692    -7383.1622     -51054.073    
+     18000   306.31268     -7408.8873      0.82933002    -7382.797      -47277.081    
+Loop time of 6.78718 on 1 procs for 500 steps with 648 atoms
+
+Performance: 6.365 ns/day, 3.771 hours/ns, 73.668 timesteps/s, 47.737 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0743     | 2.0743     | 2.0743     |   0.0 | 30.56
+Bond    | 0.00035801 | 0.00035801 | 0.00035801 |   0.0 |  0.01
+Kspace  | 0.074218   | 0.074218   | 0.074218   |   0.0 |  1.09
+Neigh   | 0.15364    | 0.15364    | 0.15364    |   0.0 |  2.26
+Comm    | 0.0053824  | 0.0053824  | 0.0053824  |   0.0 |  0.08
+Output  | 0.00093592 | 0.00093592 | 0.00093592 |   0.0 |  0.01
+Modify  | 4.4777     | 4.4777     | 4.4777     |   0.0 | 65.97
+Other   |            | 0.000695   |            |       |  0.01
+
+Nlocal:            648 ave         648 max         648 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6133 ave        6133 max        6133 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         136765 ave      136765 max      136765 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 136765
+Ave neighs/atom = 211.0571
+Ave special neighs/atom = 0.22222222
+Neighbor list builds = 537
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160743
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012370648
+  estimated relative force accuracy = 8.5909394e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     18000   306.31268     -7408.8873      0.82933002    -7382.797      -47277.073    
+     18100   303.93282     -7407.7711      0.57165183    -7382.1348     -47488.845    
+     18200   304.03313     -7408.1025      0.78842923    -7382.241      -49344.667    
+     18300   303.76192     -7408.6673      0.55310626    -7383.0636     -47184.537    
+     18400   297.11983     -7409.8494      0.91833394    -7384.3514     -48462.967    
+     18500   293.50605     -7409.3383      0.69583631    -7384.3617     -47473.51     
+Loop time of 6.84788 on 1 procs for 500 steps with 651 atoms
+
+Performance: 6.309 ns/day, 3.804 hours/ns, 73.015 timesteps/s, 47.533 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0773     | 2.0773     | 2.0773     |   0.0 | 30.34
+Bond    | 0.00034546 | 0.00034546 | 0.00034546 |   0.0 |  0.01
+Kspace  | 0.074272   | 0.074272   | 0.074272   |   0.0 |  1.08
+Neigh   | 0.1722     | 0.1722     | 0.1722     |   0.0 |  2.51
+Comm    | 0.0055185  | 0.0055185  | 0.0055185  |   0.0 |  0.08
+Output  | 0.00091746 | 0.00091746 | 0.00091746 |   0.0 |  0.01
+Modify  | 4.5166     | 4.5166     | 4.5166     |   0.0 | 65.96
+Other   |            | 0.0006797  |            |       |  0.01
+
+Nlocal:            651 ave         651 max         651 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6169 ave        6169 max        6169 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         137864 ave      137864 max      137864 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 137864
+Ave neighs/atom = 211.77266
+Ave special neighs/atom = 0.23041475
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160789
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012402694
+  estimated relative force accuracy = 8.6131945e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     18500   293.50605     -7409.3383      0.69583631    -7384.3617     -47473.595    
+     18600   289.51148     -7408.1393      0.76379407    -7383.4253     -49486.605    
+     18700   309.52578     -7409.2102      0.72971073    -7382.8745     -50328.952    
+     18800   303.14497     -7408.4614      0.72174203    -7382.6615     -49130.329    
+     18900   302.00978     -7408.2972      0.80923627    -7382.5038     -49464.826    
+     19000   288.17995     -7408.2261      0.7407424     -7383.6452     -50251.744    
+Loop time of 6.88606 on 1 procs for 500 steps with 651 atoms
+
+Performance: 6.274 ns/day, 3.826 hours/ns, 72.610 timesteps/s, 47.269 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0821     | 2.0821     | 2.0821     |   0.0 | 30.24
+Bond    | 0.00036437 | 0.00036437 | 0.00036437 |   0.0 |  0.01
+Kspace  | 0.074713   | 0.074713   | 0.074713   |   0.0 |  1.08
+Neigh   | 0.1731     | 0.1731     | 0.1731     |   0.0 |  2.51
+Comm    | 0.0055053  | 0.0055053  | 0.0055053  |   0.0 |  0.08
+Output  | 0.00090512 | 0.00090512 | 0.00090512 |   0.0 |  0.01
+Modify  | 4.5486     | 4.5486     | 4.5486     |   0.0 | 66.06
+Other   |            | 0.0006914  |            |       |  0.01
+
+Nlocal:            651 ave         651 max         651 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6180 ave        6180 max        6180 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         137796 ave      137796 max      137796 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 137796
+Ave neighs/atom = 211.6682
+Ave special neighs/atom = 0.23041475
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160789
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012402694
+  estimated relative force accuracy = 8.6131945e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     19000   288.17995     -7408.2261      0.7407424     -7383.6452     -50251.647    
+     19100   288.99804     -7408.8824      0.7535923     -7384.221      -47045.059    
+     19200   303.78111     -7409.5148      0.81052489    -7383.5735     -44000.673    
+     19300   294.01622     -7407.8331      0.73658455    -7382.7736     -57670.371    
+     19400   309.47987     -7408.9022      0.91224951    -7382.3877     -49213.515    
+     19500   312.21263     -7409.3155      0.69007313    -7382.7972     -44717.539    
+Loop time of 6.89449 on 1 procs for 500 steps with 651 atoms
+
+Performance: 6.266 ns/day, 3.830 hours/ns, 72.522 timesteps/s, 47.212 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0818     | 2.0818     | 2.0818     |   0.0 | 30.20
+Bond    | 0.00036218 | 0.00036218 | 0.00036218 |   0.0 |  0.01
+Kspace  | 0.074337   | 0.074337   | 0.074337   |   0.0 |  1.08
+Neigh   | 0.18316    | 0.18316    | 0.18316    |   0.0 |  2.66
+Comm    | 0.0055144  | 0.0055144  | 0.0055144  |   0.0 |  0.08
+Output  | 0.00091825 | 0.00091825 | 0.00091825 |   0.0 |  0.01
+Modify  | 4.5477     | 4.5477     | 4.5477     |   0.0 | 65.96
+Other   |            | 0.0006794  |            |       |  0.01
+
+Nlocal:            651 ave         651 max         651 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6156 ave        6156 max        6156 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         137688 ave      137688 max      137688 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 137688
+Ave neighs/atom = 211.5023
+Ave special neighs/atom = 0.23041475
+Neighbor list builds = 542
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160789
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012402694
+  estimated relative force accuracy = 8.6131945e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     19500   312.21263     -7409.3155      0.69007313    -7382.7972     -44717.613    
+     19600   290.82771     -7409.172       0.69533934    -7384.3047     -52386.098    
+     19700   290.92189     -7410.2014      0.60207269    -7385.4196     -53713.592    
+     19800   267.8341      -7409.7813      0.59862048    -7386.9219     -47487.327    
+     19900   267.12846     -7409.2091      0.53432773    -7386.4726     -46330.692    
+     20000   277.34849     -7408.3653      0.80103105    -7384.5126     -47135.234    
+Loop time of 6.90456 on 1 procs for 500 steps with 654 atoms
+
+Performance: 6.257 ns/day, 3.836 hours/ns, 72.416 timesteps/s, 47.360 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0864     | 2.0864     | 2.0864     |   0.0 | 30.22
+Bond    | 0.00037094 | 0.00037094 | 0.00037094 |   0.0 |  0.01
+Kspace  | 0.074286   | 0.074286   | 0.074286   |   0.0 |  1.08
+Neigh   | 0.15951    | 0.15951    | 0.15951    |   0.0 |  2.31
+Comm    | 0.005399   | 0.005399   | 0.005399   |   0.0 |  0.08
+Output  | 0.00092204 | 0.00092204 | 0.00092204 |   0.0 |  0.01
+Modify  | 4.577      | 4.577      | 4.577      |   0.0 | 66.29
+Other   |            | 0.0006842  |            |       |  0.01
+
+Nlocal:            654 ave         654 max         654 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6189 ave        6189 max        6189 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         138894 ave      138894 max      138894 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 138894
+Ave neighs/atom = 212.37615
+Ave special neighs/atom = 0.23853211
+Neighbor list builds = 537
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160788
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012401856
+  estimated relative force accuracy = 8.612612e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     20000   277.34849     -7408.3653      0.80103105    -7384.5126     -47135.3      
+     20100   301.40267     -7409.5389      0.81069344    -7383.5994     -49736.238    
+     20200   299.62187     -7408.6602      0.59163943    -7383.0883     -48488.92     
+     20300   288.58918     -7408.347       0.69157028    -7383.5949     -46544.878    
+     20400   289.95275     -7409.7145      0.8156314     -7384.7247     -51725.495    
+     20500   296.33122     -7411.0901      0.88247957    -7385.5016     -49032.298    
+Loop time of 7.0602 on 1 procs for 500 steps with 657 atoms
+
+Performance: 6.119 ns/day, 3.922 hours/ns, 70.820 timesteps/s, 46.528 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1008     | 2.1008     | 2.1008     |   0.0 | 29.76
+Bond    | 0.00038049 | 0.00038049 | 0.00038049 |   0.0 |  0.01
+Kspace  | 0.074674   | 0.074674   | 0.074674   |   0.0 |  1.06
+Neigh   | 0.18203    | 0.18203    | 0.18203    |   0.0 |  2.58
+Comm    | 0.0055851  | 0.0055851  | 0.0055851  |   0.0 |  0.08
+Output  | 0.00094154 | 0.00094154 | 0.00094154 |   0.0 |  0.01
+Modify  | 4.6951     | 4.6951     | 4.6951     |   0.0 | 66.50
+Other   |            | 0.0006918  |            |       |  0.01
+
+Nlocal:            657 ave         657 max         657 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6176 ave        6176 max        6176 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         140107 ave      140107 max      140107 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 140107
+Ave neighs/atom = 213.25266
+Ave special neighs/atom = 0.24657534
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160832
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012433815
+  estimated relative force accuracy = 8.6348068e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     20500   296.33122     -7411.0901      0.88247957    -7385.5016     -49032.26     
+     20600   288.47747     -7409.9688      0.8460681     -7385.0716     -53923.23     
+     20700   303.1626      -7410.3227      0.91151186    -7384.1357     -49925.778    
+     20800   288.38249     -7409.1676      0.89851157    -7384.2258     -52368.168    
+     20900   313.74869     -7411.0387      0.51489737    -7384.3657     -52885.539    
+     21000   292.11659     -7408.9349      0.73396116    -7383.8463     -45099.773    
+Loop time of 7.06548 on 1 procs for 500 steps with 657 atoms
+
+Performance: 6.114 ns/day, 3.925 hours/ns, 70.767 timesteps/s, 46.494 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0968     | 2.0968     | 2.0968     |   0.0 | 29.68
+Bond    | 0.00038509 | 0.00038509 | 0.00038509 |   0.0 |  0.01
+Kspace  | 0.0745     | 0.0745     | 0.0745     |   0.0 |  1.05
+Neigh   | 0.19599    | 0.19599    | 0.19599    |   0.0 |  2.77
+Comm    | 0.0056146  | 0.0056146  | 0.0056146  |   0.0 |  0.08
+Output  | 0.00092579 | 0.00092579 | 0.00092579 |   0.0 |  0.01
+Modify  | 4.6906     | 4.6906     | 4.6906     |   0.0 | 66.39
+Other   |            | 0.0006948  |            |       |  0.01
+
+Nlocal:            657 ave         657 max         657 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6193 ave        6193 max        6193 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         140215 ave      140215 max      140215 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 140215
+Ave neighs/atom = 213.41705
+Ave special neighs/atom = 0.24657534
+Neighbor list builds = 543
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160832
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012433815
+  estimated relative force accuracy = 8.6348068e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     21000   292.11659     -7408.9349      0.73396116    -7383.8463     -45099.843    
+     21100   312.61557     -7409.1081      0.69737596    -7382.3471     -51747.995    
+     21200   307.88778     -7408.4826      0.75322969    -7382.0599     -52390.315    
+     21300   312.27413     -7410.5468      0.83580896    -7383.6758     -48755.068    
+     21400   309.57536     -7411.1088      0.71952322    -7384.5791     -51005.654    
+     21500   294.88534     -7410.44        0.69226679    -7385.1623     -48487.331    
+Loop time of 7.01076 on 1 procs for 500 steps with 657 atoms
+
+Performance: 6.162 ns/day, 3.895 hours/ns, 71.319 timesteps/s, 46.857 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.0943     | 2.0943     | 2.0943     |   0.0 | 29.87
+Bond    | 0.00039055 | 0.00039055 | 0.00039055 |   0.0 |  0.01
+Kspace  | 0.074842   | 0.074842   | 0.074842   |   0.0 |  1.07
+Neigh   | 0.1946     | 0.1946     | 0.1946     |   0.0 |  2.78
+Comm    | 0.0056835  | 0.0056835  | 0.0056835  |   0.0 |  0.08
+Output  | 0.00092925 | 0.00092925 | 0.00092925 |   0.0 |  0.01
+Modify  | 4.6393     | 4.6393     | 4.6393     |   0.0 | 66.17
+Other   |            | 0.0007028  |            |       |  0.01
+
+Nlocal:            657 ave         657 max         657 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6221 ave        6221 max        6221 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         140247 ave      140247 max      140247 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 140247
+Ave neighs/atom = 213.46575
+Ave special neighs/atom = 0.24657534
+Neighbor list builds = 543
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160832
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012433815
+  estimated relative force accuracy = 8.6348068e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     21500   294.88534     -7410.44        0.69226679    -7385.1623     -48487.444    
+     21600   291.39946     -7409.4273      0.68306902    -7384.4494     -50560.389    
+     21700   300.51422     -7408.5903      0.83923732    -7382.6963     -49148.423    
+     21800   326.83994     -7409.1021      0.82410995    -7381.0285     -50125.585    
+     21900   317.0846      -7409.5244      0.80262157    -7382.2856     -55299.696    
+     22000   290.5607      -7409.1354      0.88013901    -7384.0304     -46617.646    
+Loop time of 7.0552 on 1 procs for 500 steps with 657 atoms
+
+Performance: 6.123 ns/day, 3.920 hours/ns, 70.870 timesteps/s, 46.561 katom-step/s
+99.4% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1112     | 2.1112     | 2.1112     |   0.0 | 29.92
+Bond    | 0.00040099 | 0.00040099 | 0.00040099 |   0.0 |  0.01
+Kspace  | 0.075195   | 0.075195   | 0.075195   |   0.0 |  1.07
+Neigh   | 0.1853     | 0.1853     | 0.1853     |   0.0 |  2.63
+Comm    | 0.005709   | 0.005709   | 0.005709   |   0.0 |  0.08
+Output  | 0.0011528  | 0.0011528  | 0.0011528  |   0.0 |  0.02
+Modify  | 4.6756     | 4.6756     | 4.6756     |   0.0 | 66.27
+Other   |            | 0.0007249  |            |       |  0.01
+
+Nlocal:            657 ave         657 max         657 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6221 ave        6221 max        6221 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         140159 ave      140159 max      140159 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 140159
+Ave neighs/atom = 213.33181
+Ave special neighs/atom = 0.24657534
+Neighbor list builds = 541
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160832
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012433815
+  estimated relative force accuracy = 8.6348068e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     22000   290.5607      -7409.1354      0.88013901    -7384.0304     -46617.655    
+     22100   305.44575     -7410.6047      0.61591554    -7384.5229     -50274.585    
+     22200   292.85335     -7409.0772      0.64886056    -7384.0123     -50432.619    
+     22300   304.50927     -7408.9169      0.83846118    -7382.6906     -45198.138    
+     22400   300.12104     -7407.686       0.67904905    -7381.985      -44279.043    
+     22500   301.18018     -7409.5118      0.94162871    -7383.46       -52874.737    
+Loop time of 7.03514 on 1 procs for 500 steps with 657 atoms
+
+Performance: 6.141 ns/day, 3.908 hours/ns, 71.072 timesteps/s, 46.694 katom-step/s
+99.4% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1138     | 2.1138     | 2.1138     |   0.0 | 30.05
+Bond    | 0.00041599 | 0.00041599 | 0.00041599 |   0.0 |  0.01
+Kspace  | 0.075427   | 0.075427   | 0.075427   |   0.0 |  1.07
+Neigh   | 0.18027    | 0.18027    | 0.18027    |   0.0 |  2.56
+Comm    | 0.0056871  | 0.0056871  | 0.0056871  |   0.0 |  0.08
+Output  | 0.00094521 | 0.00094521 | 0.00094521 |   0.0 |  0.01
+Modify  | 4.6579     | 4.6579     | 4.6579     |   0.0 | 66.21
+Other   |            | 0.0007169  |            |       |  0.01
+
+Nlocal:            657 ave         657 max         657 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6214 ave        6214 max        6214 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         140325 ave      140325 max      140325 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 140325
+Ave neighs/atom = 213.58447
+Ave special neighs/atom = 0.24657534
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.27160832
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.0012433815
+  estimated relative force accuracy = 8.6348068e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     22500   301.18018     -7409.5118      0.94162871    -7383.46       -52874.709    
+     22600   292.94383     -7409.7974      0.54096029    -7384.8329     -54297.082    
+     22700   293.25168     -7409.6561      0.69166357    -7384.5152     -46284.2      
+     22800   301.0967      -7409.4617      0.6159933     -7383.7424     -48748.058    
+     22900   306.47959     -7409.5951      0.71986577    -7383.2043     -47993.761    
+     23000   304.41224     -7410.5906      0.83854434    -7384.1362     -47383.224    
+Loop time of 7.03794 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.138 ns/day, 3.910 hours/ns, 71.044 timesteps/s, 47.102 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1017     | 2.1017     | 2.1017     |   0.0 | 29.86
+Bond    | 0.00039038 | 0.00039038 | 0.00039038 |   0.0 |  0.01
+Kspace  | 0.074777   | 0.074777   | 0.074777   |   0.0 |  1.06
+Neigh   | 0.16643    | 0.16643    | 0.16643    |   0.0 |  2.36
+Comm    | 0.0054483  | 0.0054483  | 0.0054483  |   0.0 |  0.08
+Output  | 0.00095721 | 0.00095721 | 0.00095721 |   0.0 |  0.01
+Modify  | 4.6876     | 4.6876     | 4.6876     |   0.0 | 66.60
+Other   |            | 0.0006813  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6278 ave        6278 max        6278 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142553 ave      142553 max      142553 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142553
+Ave neighs/atom = 215.01207
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 537
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     23000   304.41224     -7410.5906      0.83854434    -7384.1362     -47383.167    
+     23100   287.01416     -7411.1227      0.58487786    -7386.3861     -48405.781    
+     23200   299.28199     -7412.0213      0.8268477     -7386.0104     -47874.009    
+     23300   289.2133      -7410.157       0.85440873    -7384.9658     -51015.912    
+     23400   294.27526     -7409.5671      0.69277937    -7384.1115     -47413.437    
+     23500   315.79138     -7411.61        0.90864734    -7384.128      -48555.706    
+Loop time of 7.07118 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.109 ns/day, 3.928 hours/ns, 70.710 timesteps/s, 46.880 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1067     | 2.1067     | 2.1067     |   0.0 | 29.79
+Bond    | 0.00040943 | 0.00040943 | 0.00040943 |   0.0 |  0.01
+Kspace  | 0.075166   | 0.075166   | 0.075166   |   0.0 |  1.06
+Neigh   | 0.17126    | 0.17126    | 0.17126    |   0.0 |  2.42
+Comm    | 0.0055687  | 0.0055687  | 0.0055687  |   0.0 |  0.08
+Output  | 0.00094387 | 0.00094387 | 0.00094387 |   0.0 |  0.01
+Modify  | 4.7105     | 4.7105     | 4.7105     |   0.0 | 66.62
+Other   |            | 0.0006839  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6287 ave        6287 max        6287 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142688 ave      142688 max      142688 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142688
+Ave neighs/atom = 215.21569
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 538
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     23500   315.79138     -7411.61        0.90864734    -7384.128      -48555.768    
+     23600   285.90937     -7410.8924      0.75025447    -7386.0833     -49966.696    
+     23700   287.99399     -7411.8382      0.91606746    -7386.688      -46362.577    
+     23800   294.72324     -7411.7746      0.87728858    -7386.0968     -52821.103    
+     23900   303.67491     -7411.3037      0.86731215    -7384.8827     -51857.584    
+     24000   307.0805      -7411.3546      1.0374901     -7384.4767     -47460.967    
+Loop time of 7.0944 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.089 ns/day, 3.941 hours/ns, 70.478 timesteps/s, 46.727 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1111     | 2.1111     | 2.1111     |   0.0 | 29.76
+Bond    | 0.00042086 | 0.00042086 | 0.00042086 |   0.0 |  0.01
+Kspace  | 0.075044   | 0.075044   | 0.075044   |   0.0 |  1.06
+Neigh   | 0.16761    | 0.16761    | 0.16761    |   0.0 |  2.36
+Comm    | 0.005484   | 0.005484   | 0.005484   |   0.0 |  0.08
+Output  | 0.00094583 | 0.00094583 | 0.00094583 |   0.0 |  0.01
+Modify  | 4.7331     | 4.7331     | 4.7331     |   0.0 | 66.72
+Other   |            | 0.0006787  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6317 ave        6317 max        6317 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142780 ave      142780 max      142780 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142780
+Ave neighs/atom = 215.35445
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 537
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     24000   307.0805      -7411.3546      1.0374901     -7384.4767     -47460.76     
+     24100   289.30379     -7409.5292      1.0576187     -7384.1272     -43326.518    
+     24200   303.12102     -7410.7596      1.2346772     -7384.0178     -49414.09     
+     24300   301.91595     -7411.5172      1.1734135     -7384.9381     -49412.647    
+     24400   287.28919     -7410.6864      0.96642562    -7385.545      -48889.265    
+     24500   310.82306     -7411.0313      0.7971187     -7384.0789     -53108.917    
+Loop time of 7.10343 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.082 ns/day, 3.946 hours/ns, 70.389 timesteps/s, 46.668 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1088     | 2.1088     | 2.1088     |   0.0 | 29.69
+Bond    | 0.00041663 | 0.00041663 | 0.00041663 |   0.0 |  0.01
+Kspace  | 0.075022   | 0.075022   | 0.075022   |   0.0 |  1.06
+Neigh   | 0.18806    | 0.18806    | 0.18806    |   0.0 |  2.65
+Comm    | 0.0056417  | 0.0056417  | 0.0056417  |   0.0 |  0.08
+Output  | 0.00095683 | 0.00095683 | 0.00095683 |   0.0 |  0.01
+Modify  | 4.7239     | 4.7239     | 4.7239     |   0.0 | 66.50
+Other   |            | 0.0006879  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6237 ave        6237 max        6237 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142661 ave      142661 max      142661 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142661
+Ave neighs/atom = 215.17496
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 541
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     24500   310.82306     -7411.0313      0.7971187     -7384.0789     -53108.915    
+     24600   307.39628     -7410.1663      0.86514414    -7383.4343     -48523.865    
+     24700   311.37825     -7410.9951      0.92454981    -7383.8685     -49829.843    
+     24800   298.96397     -7411.2087      1.057704      -7384.9937     -49410.614    
+     24900   297.73833     -7411.4961      0.81512191    -7385.6268     -52228.149    
+     25000   303.47009     -7411.7101      1.0619369     -7385.1116     -47148.152    
+Loop time of 7.05214 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.126 ns/day, 3.918 hours/ns, 70.900 timesteps/s, 47.007 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1071     | 2.1071     | 2.1071     |   0.0 | 29.88
+Bond    | 0.00042057 | 0.00042057 | 0.00042057 |   0.0 |  0.01
+Kspace  | 0.074777   | 0.074777   | 0.074777   |   0.0 |  1.06
+Neigh   | 0.15612    | 0.15612    | 0.15612    |   0.0 |  2.21
+Comm    | 0.0054077  | 0.0054077  | 0.0054077  |   0.0 |  0.08
+Output  | 0.0009445  | 0.0009445  | 0.0009445  |   0.0 |  0.01
+Modify  | 4.7066     | 4.7066     | 4.7066     |   0.0 | 66.74
+Other   |            | 0.0006828  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6273 ave        6273 max        6273 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142661 ave      142661 max      142661 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142661
+Ave neighs/atom = 215.17496
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 535
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     25000   303.47009     -7411.7101      1.0619369     -7385.1116     -47148.039    
+     25100   304.32313     -7410.8619      0.75369675    -7384.5        -46245.385    
+     25200   298.9912      -7410.5223      0.9824075     -7384.3803     -52273.777    
+     25300   295.89708     -7410.9963      0.78161916    -7385.3154     -45766.135    
+     25400   279.70898     -7410.9506      0.6836054     -7386.73       -46218.449    
+     25500   304.37184     -7412.5001      0.64401536    -7386.2437     -47332.03     
+Loop time of 7.0856 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.097 ns/day, 3.936 hours/ns, 70.566 timesteps/s, 46.785 katom-step/s
+99.5% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1092     | 2.1092     | 2.1092     |   0.0 | 29.77
+Bond    | 0.00041766 | 0.00041766 | 0.00041766 |   0.0 |  0.01
+Kspace  | 0.07497    | 0.07497    | 0.07497    |   0.0 |  1.06
+Neigh   | 0.18245    | 0.18245    | 0.18245    |   0.0 |  2.57
+Comm    | 0.0056288  | 0.0056288  | 0.0056288  |   0.0 |  0.08
+Output  | 0.00091567 | 0.00091567 | 0.00091567 |   0.0 |  0.01
+Modify  | 4.7113     | 4.7113     | 4.7113     |   0.0 | 66.49
+Other   |            | 0.0006848  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6284 ave        6284 max        6284 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142532 ave      142532 max      142532 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142532
+Ave neighs/atom = 214.98039
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     25500   304.37184     -7412.5001      0.64401536    -7386.2437     -47331.908    
+     25600   293.7666      -7410.2147      0.59683751    -7384.8979     -55239.373    
+     25700   306.22237     -7410.2504      0.80275948    -7383.6795     -53366.584    
+     25800   295.54841     -7410.2733      0.94941851    -7384.454      -47440.487    
+     25900   296.54177     -7411.5616      0.74636377    -7385.8617     -50622.814    
+     26000   296.42865     -7411.6588      0.90520696    -7385.8096     -49960.145    
+Loop time of 7.09388 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.090 ns/day, 3.941 hours/ns, 70.483 timesteps/s, 46.730 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1128     | 2.1128     | 2.1128     |   0.0 | 29.78
+Bond    | 0.00041324 | 0.00041324 | 0.00041324 |   0.0 |  0.01
+Kspace  | 0.074907   | 0.074907   | 0.074907   |   0.0 |  1.06
+Neigh   | 0.18728    | 0.18728    | 0.18728    |   0.0 |  2.64
+Comm    | 0.0056179  | 0.0056179  | 0.0056179  |   0.0 |  0.08
+Output  | 0.00097083 | 0.00097083 | 0.00097083 |   0.0 |  0.01
+Modify  | 4.7112     | 4.7112     | 4.7112     |   0.0 | 66.41
+Other   |            | 0.0007076  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6305 ave        6305 max        6305 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142726 ave      142726 max      142726 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142726
+Ave neighs/atom = 215.273
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 541
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     26000   296.42865     -7411.6588      0.90520696    -7385.8096     -49960.166    
+     26100   299.29369     -7410.9321      0.74763801    -7384.9994     -43517.906    
+     26200   296.74066     -7410.1669      0.97013602    -7384.2265     -47677.664    
+     26300   304.45123     -7409.5862      0.73292352    -7383.2342     -49598.4      
+     26400   305.46009     -7409.9795      1.1000114     -7383.1755     -52141.549    
+     26500   294.40904     -7411.0481      1.0950644     -7385.179      -46346.91     
+Loop time of 7.03978 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.137 ns/day, 3.911 hours/ns, 71.025 timesteps/s, 47.090 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1044     | 2.1044     | 2.1044     |   0.0 | 29.89
+Bond    | 0.00041912 | 0.00041912 | 0.00041912 |   0.0 |  0.01
+Kspace  | 0.074798   | 0.074798   | 0.074798   |   0.0 |  1.06
+Neigh   | 0.15594    | 0.15594    | 0.15594    |   0.0 |  2.22
+Comm    | 0.0054133  | 0.0054133  | 0.0054133  |   0.0 |  0.08
+Output  | 0.00093317 | 0.00093317 | 0.00093317 |   0.0 |  0.01
+Modify  | 4.6972     | 4.6972     | 4.6972     |   0.0 | 66.72
+Other   |            | 0.000684   |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6272 ave        6272 max        6272 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142730 ave      142730 max      142730 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142730
+Ave neighs/atom = 215.27903
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 535
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     26500   294.40904     -7411.0481      1.0950644     -7385.179      -46346.834    
+     26600   291.85703     -7411.428       1.1577532     -7385.711      -49556.652    
+     26700   298.44532     -7411.2995      0.69628857    -7385.4895     -51835.24     
+     26800   301.27249     -7410.7386      0.82431788    -7384.5627     -51037.469    
+     26900   305.63475     -7410.848       0.68615682    -7384.4432     -47672.651    
+     27000   307.50383     -7411.0003      0.7227404     -7384.4017     -46588.591    
+Loop time of 7.07842 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.103 ns/day, 3.932 hours/ns, 70.637 timesteps/s, 46.832 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1118     | 2.1118     | 2.1118     |   0.0 | 29.83
+Bond    | 0.00041967 | 0.00041967 | 0.00041967 |   0.0 |  0.01
+Kspace  | 0.074899   | 0.074899   | 0.074899   |   0.0 |  1.06
+Neigh   | 0.18223    | 0.18223    | 0.18223    |   0.0 |  2.57
+Comm    | 0.0056135  | 0.0056135  | 0.0056135  |   0.0 |  0.08
+Output  | 0.00095521 | 0.00095521 | 0.00095521 |   0.0 |  0.01
+Modify  | 4.7018     | 4.7018     | 4.7018     |   0.0 | 66.42
+Other   |            | 0.0006962  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6263 ave        6263 max        6263 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142650 ave      142650 max      142650 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142650
+Ave neighs/atom = 215.15837
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     27000   307.50383     -7411.0003      0.7227404     -7384.4017     -46588.604    
+     27100   304.38165     -7410.9645      0.68527741    -7384.666      -50110.192    
+     27200   296.42839     -7411.106       0.95140762    -7385.2106     -49537.164    
+     27300   298.03115     -7410.9568      0.72542402    -7385.1525     -51993.587    
+     27400   292.32115     -7411.0166      1.2193613     -7385.1989     -51537.962    
+     27500   297.6268      -7411.1604      1.1003932     -7385.0152     -47279.094    
+Loop time of 7.07725 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.104 ns/day, 3.932 hours/ns, 70.649 timesteps/s, 46.840 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1027     | 2.1027     | 2.1027     |   0.0 | 29.71
+Bond    | 0.00043335 | 0.00043335 | 0.00043335 |   0.0 |  0.01
+Kspace  | 0.074683   | 0.074683   | 0.074683   |   0.0 |  1.06
+Neigh   | 0.16356    | 0.16356    | 0.16356    |   0.0 |  2.31
+Comm    | 0.0055459  | 0.0055459  | 0.0055459  |   0.0 |  0.08
+Output  | 0.00094946 | 0.00094946 | 0.00094946 |   0.0 |  0.01
+Modify  | 4.7287     | 4.7287     | 4.7287     |   0.0 | 66.82
+Other   |            | 0.0006985  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6291 ave        6291 max        6291 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142801 ave      142801 max      142801 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142801
+Ave neighs/atom = 215.38612
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 536
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (src/neighbor.cpp:671)
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     27500   297.6268      -7411.1604      1.1003932     -7385.0152     -47278.946    
+     27600   301.88368     -7410.5591      1.1028196     -7384.0532     -45938.495    
+     27700   313.03089     -7410.5364      1.0003774     -7383.195      -46773.635    
+     27800   308.0403      -7410.1955      1.003291      -7383.2711     -52251.305    
+     27900   288.35353     -7409.7014      0.77286462    -7384.6641     -51690.827    
+     28000   299.98586     -7411.7023      0.64780906    -7385.8112     -47806.913    
+Loop time of 7.11499 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.072 ns/day, 3.953 hours/ns, 70.274 timesteps/s, 46.592 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1075     | 2.1075     | 2.1075     |   0.0 | 29.62
+Bond    | 0.0004213  | 0.0004213  | 0.0004213  |   0.0 |  0.01
+Kspace  | 0.074881   | 0.074881   | 0.074881   |   0.0 |  1.05
+Neigh   | 0.189      | 0.189      | 0.189      |   0.0 |  2.66
+Comm    | 0.0056771  | 0.0056771  | 0.0056771  |   0.0 |  0.08
+Output  | 0.00092792 | 0.00092792 | 0.00092792 |   0.0 |  0.01
+Modify  | 4.7359     | 4.7359     | 4.7359     |   0.0 | 66.56
+Other   |            | 0.0006857  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6323 ave        6323 max        6323 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142684 ave      142684 max      142684 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142684
+Ave neighs/atom = 215.20965
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 541
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+WARNING: Using a manybody potential with bonds/angles/dihedrals and special_bond exclusions (src/pair.cpp:250)
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+WARNING: Too many warnings: 101 vs 100. All future warnings will be suppressed
+     28000   299.98586     -7411.7023      0.64780906    -7385.8112     -47806.837    
+     28100   295.25921     -7411.4841      1.0285878     -7385.6099     -47909.688    
+     28200   297.4034      -7410.8079      1.1099468     -7384.6719     -50692.337    
+     28300   314.60824     -7410.4335      1.1416864     -7382.818      -47511.454    
+     28400   310.34563     -7410.1787      1.0427067     -7383.021      -51198.617    
+     28500   315.95494     -7412.1725      1.0610787     -7384.5244     -48355.316    
+Loop time of 7.07244 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.108 ns/day, 3.929 hours/ns, 70.697 timesteps/s, 46.872 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1084     | 2.1084     | 2.1084     |   0.0 | 29.81
+Bond    | 0.00041735 | 0.00041735 | 0.00041735 |   0.0 |  0.01
+Kspace  | 0.074951   | 0.074951   | 0.074951   |   0.0 |  1.06
+Neigh   | 0.17721    | 0.17721    | 0.17721    |   0.0 |  2.51
+Comm    | 0.005607   | 0.005607   | 0.005607   |   0.0 |  0.08
+Output  | 0.00093175 | 0.00093175 | 0.00093175 |   0.0 |  0.01
+Modify  | 4.7042     | 4.7042     | 4.7042     |   0.0 | 66.51
+Other   |            | 0.0006845  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6360 ave        6360 max        6360 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142628 ave      142628 max      142628 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142628
+Ave neighs/atom = 215.12519
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 539
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     28500   315.95494     -7412.1725      1.0610787     -7384.5244     -48355.297    
+     28600   292.75154     -7411.5483      0.90955761    -7386.0042     -51593.943    
+     28700   293.61864     -7411.426       0.77340328    -7385.945      -57317.218    
+     28800   310.78631     -7411.8081      0.76953569    -7384.8864     -45970.524    
+     28900   309.84958     -7409.7854      1.0780972     -7382.6339     -54229.252    
+     29000   305.02101     -7409.8033      1.0762719     -7383.06       -53048.914    
+Loop time of 7.1174 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.070 ns/day, 3.954 hours/ns, 70.250 timesteps/s, 46.576 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1088     | 2.1088     | 2.1088     |   0.0 | 29.63
+Bond    | 0.00042675 | 0.00042675 | 0.00042675 |   0.0 |  0.01
+Kspace  | 0.074833   | 0.074833   | 0.074833   |   0.0 |  1.05
+Neigh   | 0.19487    | 0.19487    | 0.19487    |   0.0 |  2.74
+Comm    | 0.005699   | 0.005699   | 0.005699   |   0.0 |  0.08
+Output  | 0.000925   | 0.000925   | 0.000925   |   0.0 |  0.01
+Modify  | 4.7312     | 4.7312     | 4.7312     |   0.0 | 66.47
+Other   |            | 0.0006972  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6307 ave        6307 max        6307 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142676 ave      142676 max      142676 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142676
+Ave neighs/atom = 215.19759
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 542
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     29000   305.02101     -7409.8033      1.0762719     -7383.06       -53048.89     
+     29100   303.97957     -7410.7903      0.80681469    -7384.4041     -50501.383    
+     29200   305.95284     -7411.8033      0.74263953    -7385.3152     -46198.033    
+     29300   302.04242     -7411.5139      0.66324386    -7385.4343     -49545.883    
+     29400   298.23572     -7410.9802      0.84894374    -7385.0352     -51908.761    
+     29500   298.42984     -7410.5484      0.981169      -7384.4548     -49253.247    
+Loop time of 7.1079 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.078 ns/day, 3.949 hours/ns, 70.344 timesteps/s, 46.638 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1075     | 2.1075     | 2.1075     |   0.0 | 29.65
+Bond    | 0.00042992 | 0.00042992 | 0.00042992 |   0.0 |  0.01
+Kspace  | 0.074866   | 0.074866   | 0.074866   |   0.0 |  1.05
+Neigh   | 0.18439    | 0.18439    | 0.18439    |   0.0 |  2.59
+Comm    | 0.0056486  | 0.0056486  | 0.0056486  |   0.0 |  0.08
+Output  | 0.00093004 | 0.00093004 | 0.00093004 |   0.0 |  0.01
+Modify  | 4.7334     | 4.7334     | 4.7334     |   0.0 | 66.59
+Other   |            | 0.0006922  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6334 ave        6334 max        6334 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142706 ave      142706 max      142706 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142706
+Ave neighs/atom = 215.24284
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     29500   298.42984     -7410.5484      0.981169      -7384.4548     -49253.331    
+     29600   299.99442     -7409.8258      1.0295276     -7383.5522     -55204.87     
+     29700   324.08113     -7411.621       1.0709687     -7383.2792     -48932.45     
+     29800   298.40122     -7411.3847      1.2027523     -7385.072      -48916.44     
+     29900   286.30349     -7411.7634      1.1600207     -7386.5114     -49347.454    
+     30000   296.80067     -7412.2924      1.0244483     -7386.2927     -47765.884    
+Loop time of 7.10496 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.080 ns/day, 3.947 hours/ns, 70.373 timesteps/s, 46.658 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.113      | 2.113      | 2.113      |   0.0 | 29.74
+Bond    | 0.00042731 | 0.00042731 | 0.00042731 |   0.0 |  0.01
+Kspace  | 0.074833   | 0.074833   | 0.074833   |   0.0 |  1.05
+Neigh   | 0.16364    | 0.16364    | 0.16364    |   0.0 |  2.30
+Comm    | 0.0055332  | 0.0055332  | 0.0055332  |   0.0 |  0.08
+Output  | 0.00093475 | 0.00093475 | 0.00093475 |   0.0 |  0.01
+Modify  | 4.7459     | 4.7459     | 4.7459     |   0.0 | 66.80
+Other   |            | 0.0006889  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6320 ave        6320 max        6320 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142615 ave      142615 max      142615 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142615
+Ave neighs/atom = 215.10558
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 536
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     30000   296.80067     -7412.2924      1.0244483     -7386.2927     -47765.847    
+     30100   294.8017      -7410.482       1.1635428     -7384.5114     -53890.514    
+     30200   317.28902     -7409.8478      1.2361787     -7381.9122     -47996.807    
+     30300   308.88166     -7409.6351      1.1148144     -7382.5284     -47134.411    
+     30400   315.23877     -7411.7549      1.0176115     -7384.2105     -49779.43     
+     30500   302.79964     -7411.9995      1.0307817     -7385.4887     -48405.93     
+Loop time of 7.11676 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.070 ns/day, 3.954 hours/ns, 70.257 timesteps/s, 46.580 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.108      | 2.108      | 2.108      |   0.0 | 29.62
+Bond    | 0.00042247 | 0.00042247 | 0.00042247 |   0.0 |  0.01
+Kspace  | 0.074765   | 0.074765   | 0.074765   |   0.0 |  1.05
+Neigh   | 0.18478    | 0.18478    | 0.18478    |   0.0 |  2.60
+Comm    | 0.005627   | 0.005627   | 0.005627   |   0.0 |  0.08
+Output  | 0.00094642 | 0.00094642 | 0.00094642 |   0.0 |  0.01
+Modify  | 4.7415     | 4.7415     | 4.7415     |   0.0 | 66.62
+Other   |            | 0.0006923  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6343 ave        6343 max        6343 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142605 ave      142605 max      142605 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142605
+Ave neighs/atom = 215.0905
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     30500   302.79964     -7411.9995      1.0307817     -7385.4887     -48405.897    
+     30600   297.27458     -7411.6436      0.91593024    -7385.7125     -49588.642    
+     30700   311.77207     -7412.1217      0.85220528    -7385.0344     -48263.686    
+     30800   317.92184     -7411.7469      1.145271      -7383.849      -51575.537    
+     30900   306.975       -7410.5112      0.90938822    -7383.7704     -48471.156    
+     31000   288.66597     -7409.9517      0.90228243    -7384.7586     -42348.33     
+Loop time of 7.12975 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.059 ns/day, 3.961 hours/ns, 70.129 timesteps/s, 46.495 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1106     | 2.1106     | 2.1106     |   0.0 | 29.60
+Bond    | 0.00042211 | 0.00042211 | 0.00042211 |   0.0 |  0.01
+Kspace  | 0.074807   | 0.074807   | 0.074807   |   0.0 |  1.05
+Neigh   | 0.1757     | 0.1757     | 0.1757     |   0.0 |  2.46
+Comm    | 0.0055497  | 0.0055497  | 0.0055497  |   0.0 |  0.08
+Output  | 0.00092729 | 0.00092729 | 0.00092729 |   0.0 |  0.01
+Modify  | 4.761      | 4.761      | 4.761      |   0.0 | 66.78
+Other   |            | 0.0006834  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6314 ave        6314 max        6314 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142705 ave      142705 max      142705 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142705
+Ave neighs/atom = 215.24133
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 538
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     31000   288.66597     -7409.9517      0.90228243    -7384.7586     -42348.284    
+     31100   300.02791     -7411.1352      1.0747739     -7384.8136     -45801.535    
+     31200   304.37224     -7411.8183      1.1340606     -7385.0718     -53207.994    
+     31300   313.64359     -7412.7371      0.958796      -7385.3858     -50229.269    
+     31400   302.63641     -7411.933       0.87472084    -7385.5919     -51771.331    
+     31500   303.49786     -7411.2383      0.91925977    -7384.7802     -48827.412    
+Loop time of 7.17595 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.020 ns/day, 3.987 hours/ns, 69.677 timesteps/s, 46.196 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1111     | 2.1111     | 2.1111     |   0.0 | 29.42
+Bond    | 0.00042076 | 0.00042076 | 0.00042076 |   0.0 |  0.01
+Kspace  | 0.074786   | 0.074786   | 0.074786   |   0.0 |  1.04
+Neigh   | 0.20358    | 0.20358    | 0.20358    |   0.0 |  2.84
+Comm    | 0.0057545  | 0.0057545  | 0.0057545  |   0.0 |  0.08
+Output  | 0.00092562 | 0.00092562 | 0.00092562 |   0.0 |  0.01
+Modify  | 4.7787     | 4.7787     | 4.7787     |   0.0 | 66.59
+Other   |            | 0.0007051  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6354 ave        6354 max        6354 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142615 ave      142615 max      142615 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142615
+Ave neighs/atom = 215.10558
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 543
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     31500   303.49786     -7411.2383      0.91925977    -7384.7802     -48827.354    
+     31600   291.44648     -7410.1159      0.90263465    -7384.6885     -53166.722    
+     31700   304.48877     -7412.3397      0.95367447    -7385.7638     -45418.823    
+     31800   288.6767      -7411.9867      1.0886318     -7386.6064     -50392.598    
+     31900   306.70893     -7413.1647      1.1119109     -7386.2437     -48897.44     
+     32000   308.24339     -7411.3925      1.2114019     -7384.2429     -49461.709    
+Loop time of 7.15545 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.037 ns/day, 3.975 hours/ns, 69.877 timesteps/s, 46.328 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1172     | 2.1172     | 2.1172     |   0.0 | 29.59
+Bond    | 0.00042276 | 0.00042276 | 0.00042276 |   0.0 |  0.01
+Kspace  | 0.074749   | 0.074749   | 0.074749   |   0.0 |  1.04
+Neigh   | 0.18672    | 0.18672    | 0.18672    |   0.0 |  2.61
+Comm    | 0.0055879  | 0.0055879  | 0.0055879  |   0.0 |  0.08
+Output  | 0.00092429 | 0.00092429 | 0.00092429 |   0.0 |  0.01
+Modify  | 4.7692     | 4.7692     | 4.7692     |   0.0 | 66.65
+Other   |            | 0.0007007  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6317 ave        6317 max        6317 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142568 ave      142568 max      142568 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142568
+Ave neighs/atom = 215.03469
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     32000   308.24339     -7411.3925      1.2114019     -7384.2429     -49461.831    
+     32100   302.03326     -7410.4854      1.0242493     -7384.0455     -50863.488    
+     32200   288.93341     -7410.3176      1.0856677     -7384.9186     -50566.481    
+     32300   284.25984     -7411.0096      0.82803331    -7386.2616     -46635.983    
+     32400   290.44953     -7412.0518      0.87141364    -7386.7395     -48384.377    
+     32500   291.89517     -7411.4762      1.0450262     -7385.8687     -42069.693    
+Loop time of 7.14601 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.045 ns/day, 3.970 hours/ns, 69.969 timesteps/s, 46.390 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1146     | 2.1146     | 2.1146     |   0.0 | 29.59
+Bond    | 0.00042216 | 0.00042216 | 0.00042216 |   0.0 |  0.01
+Kspace  | 0.07532    | 0.07532    | 0.07532    |   0.0 |  1.05
+Neigh   | 0.18122    | 0.18122    | 0.18122    |   0.0 |  2.54
+Comm    | 0.0056044  | 0.0056044  | 0.0056044  |   0.0 |  0.08
+Output  | 0.00092458 | 0.00092458 | 0.00092458 |   0.0 |  0.01
+Modify  | 4.7672     | 4.7672     | 4.7672     |   0.0 | 66.71
+Other   |            | 0.0007038  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6370 ave        6370 max        6370 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142611 ave      142611 max      142611 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142611
+Ave neighs/atom = 215.09955
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 539
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     32500   291.89517     -7411.4762      1.0450262     -7385.8687     -42069.564    
+     32600   288.71898     -7409.4798      1.0863802     -7384.0982     -50914.817    
+     32700   315.41973     -7411.108       1.077088      -7383.4889     -48754.448    
+     32800   303.8153      -7411.3564      0.9264336     -7384.8644     -48466.949    
+     32900   277.21772     -7410.999       0.99181451    -7386.6798     -46688.254    
+     33000   307.62935     -7413.5413      0.66292026    -7386.9919     -54505.604    
+Loop time of 7.13014 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.059 ns/day, 3.961 hours/ns, 70.125 timesteps/s, 46.493 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1138     | 2.1138     | 2.1138     |   0.0 | 29.65
+Bond    | 0.0004173  | 0.0004173  | 0.0004173  |   0.0 |  0.01
+Kspace  | 0.074964   | 0.074964   | 0.074964   |   0.0 |  1.05
+Neigh   | 0.17437    | 0.17437    | 0.17437    |   0.0 |  2.45
+Comm    | 0.0055354  | 0.0055354  | 0.0055354  |   0.0 |  0.08
+Output  | 0.00092296 | 0.00092296 | 0.00092296 |   0.0 |  0.01
+Modify  | 4.7594     | 4.7594     | 4.7594     |   0.0 | 66.75
+Other   |            | 0.0006876  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6367 ave        6367 max        6367 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142705 ave      142705 max      142705 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142705
+Ave neighs/atom = 215.24133
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 538
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     33000   307.62935     -7413.5413      0.66292026    -7386.9919     -54505.585    
+     33100   288.41696     -7411.1781      1.027078      -7385.8812     -56470.093    
+     33200   297.21306     -7410.393       1.0360326     -7384.347      -51768.232    
+     33300   308.30191     -7410.9214      0.98043823    -7383.9979     -48908.834    
+     33400   296.43967     -7410.4885      1.050002      -7384.4936     -44777.357    
+     33500   302.47917     -7411.0574      0.79362635    -7384.8107     -51938.597    
+Loop time of 7.13972 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.051 ns/day, 3.967 hours/ns, 70.031 timesteps/s, 46.430 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1097     | 2.1097     | 2.1097     |   0.0 | 29.55
+Bond    | 0.00041442 | 0.00041442 | 0.00041442 |   0.0 |  0.01
+Kspace  | 0.07485    | 0.07485    | 0.07485    |   0.0 |  1.05
+Neigh   | 0.1869     | 0.1869     | 0.1869     |   0.0 |  2.62
+Comm    | 0.0056562  | 0.0056562  | 0.0056562  |   0.0 |  0.08
+Output  | 0.00093458 | 0.00093458 | 0.00093458 |   0.0 |  0.01
+Modify  | 4.7606     | 4.7606     | 4.7606     |   0.0 | 66.68
+Other   |            | 0.0006888  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6340 ave        6340 max        6340 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142646 ave      142646 max      142646 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142646
+Ave neighs/atom = 215.15234
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     33500   302.47917     -7411.0574      0.79362635    -7384.8107     -51938.601    
+     33600   291.81776     -7410.8072      1.1610258     -7385.0902     -46353.901    
+     33700   295.77782     -7411.5041      0.85947037    -7385.7554     -47693.208    
+     33800   296.32386     -7411.5767      1.0018289     -7385.6397     -45548.365    
+     33900   289.55181     -7409.8344      1.0168569     -7384.4522     -45184.959    
+     34000   299.69436     -7410.1739      0.99747022    -7383.9577     -47037.925    
+Loop time of 7.1234 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.065 ns/day, 3.957 hours/ns, 70.191 timesteps/s, 46.537 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1168     | 2.1168     | 2.1168     |   0.0 | 29.72
+Bond    | 0.00040916 | 0.00040916 | 0.00040916 |   0.0 |  0.01
+Kspace  | 0.074839   | 0.074839   | 0.074839   |   0.0 |  1.05
+Neigh   | 0.17407    | 0.17407    | 0.17407    |   0.0 |  2.44
+Comm    | 0.0055615  | 0.0055615  | 0.0055615  |   0.0 |  0.08
+Output  | 0.00093567 | 0.00093567 | 0.00093567 |   0.0 |  0.01
+Modify  | 4.7501     | 4.7501     | 4.7501     |   0.0 | 66.68
+Other   |            | 0.0006865  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6302 ave        6302 max        6302 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142744 ave      142744 max      142744 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142744
+Ave neighs/atom = 215.30015
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 538
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+variable a loop 30
+
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert ${tfac} group H2O shake shak full_energy pressure 100 region system
+fix fgcmc_H2O H2O gcmc 100 100 0 0 65899 300 -0.5 0.1 mol h2omol tfac_insert 1.66666666666667 group H2O shake shak full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_H2O
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_H2O
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     34000   299.69436     -7410.1739      0.99747022    -7383.9577     -47037.872    
+     34100   306.88454     -7411.6489      1.1169185     -7384.7082     -49230.319    
+     34200   298.54937     -7411.342       1.0109074     -7385.2087     -46691.486    
+     34300   291.55203     -7410.9505      0.66748042    -7385.7494     -48218.475    
+     34400   301.56127     -7411.996       0.66707337    -7385.953      -54481.085    
+     34500   314.23202     -7412.3009      0.71410796    -7385.1447     -45137.265    
+Loop time of 7.14873 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.043 ns/day, 3.972 hours/ns, 69.942 timesteps/s, 46.372 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.1124     | 2.1124     | 2.1124     |   0.0 | 29.55
+Bond    | 0.00041845 | 0.00041845 | 0.00041845 |   0.0 |  0.01
+Kspace  | 0.074658   | 0.074658   | 0.074658   |   0.0 |  1.04
+Neigh   | 0.18577    | 0.18577    | 0.18577    |   0.0 |  2.60
+Comm    | 0.005603   | 0.005603   | 0.005603   |   0.0 |  0.08
+Output  | 0.00094892 | 0.00094892 | 0.00094892 |   0.0 |  0.01
+Modify  | 4.7682     | 4.7682     | 4.7682     |   0.0 | 66.70
+Other   |            | 0.0006995  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6304 ave        6304 max        6304 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142708 ave      142708 max      142708 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142708
+Ave neighs/atom = 215.24585
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 540
+Dangerous builds = 0
+unfix fgcmc_H2O
+
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert ${tfac} group CO2 full_energy pressure 100 region system
+fix fgcmc_CO2 CO2 gcmc 100 100 0 0 87787 300 -0.5 0.1 mol co2mol tfac_insert 1.66666666666667 group CO2 full_energy pressure 100 region system
+run 500
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb
+  G vector (1/distance) = 0.2716083
+  grid = 16 12 9
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.001243233
+  estimated relative force accuracy = 8.633775e-05
+  using double precision FFTW3
+  3d grid and FFT values/proc = 4998 1728
+0 atoms in group FixGCMC:gcmc_exclusion_group:fgcmc_CO2
+0 atoms in group FixGCMC:rotation_gas_atoms:fgcmc_CO2
+Per MPI rank memory allocation (min/avg/max) = 13.39 | 13.39 | 13.39 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+     34500   314.23202     -7412.3009      0.71410796    -7385.1447     -45137.291    
+     34600   308.65007     -7411.4021      1.1285472     -7384.3012     -48163.425    
+     34700   314.93595     -7411.4267      0.95607827    -7383.9692     -47686.143    
+     34800   296.02531     -7411.3058      0.91757263    -7385.4782     -49705.362    
+     34900   294.56835     -7412.3237      0.79822953    -7386.7381     -51580.587    
+     35000   287.21193     -7411.0512      0.8291273     -7386.0536     -53846.952    
+Loop time of 7.10681 on 1 procs for 500 steps with 663 atoms
+
+Performance: 6.079 ns/day, 3.948 hours/ns, 70.355 timesteps/s, 46.645 katom-step/s
+99.6% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 2.117      | 2.117      | 2.117      |   0.0 | 29.79
+Bond    | 0.00041409 | 0.00041409 | 0.00041409 |   0.0 |  0.01
+Kspace  | 0.074759   | 0.074759   | 0.074759   |   0.0 |  1.05
+Neigh   | 0.16784    | 0.16784    | 0.16784    |   0.0 |  2.36
+Comm    | 0.0055543  | 0.0055543  | 0.0055543  |   0.0 |  0.08
+Output  | 0.00091117 | 0.00091117 | 0.00091117 |   0.0 |  0.01
+Modify  | 4.7397     | 4.7397     | 4.7397     |   0.0 | 66.69
+Other   |            | 0.0006872  |            |       |  0.01
+
+Nlocal:            663 ave         663 max         663 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           6325 ave        6325 max        6325 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         142711 ave      142711 max      142711 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 142711
+Ave neighs/atom = 215.25038
+Ave special neighs/atom = 0.26244344
+Neighbor list builds = 537
+Dangerous builds = 0
+unfix fgcmc_CO2
+
+next a
+jump SELF loop
+
+write_dump all atom dump.lammpstrj
+Total wall time: 0:07:26

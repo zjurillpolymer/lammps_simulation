@@ -1,0 +1,24 @@
+units metal
+boundary p p p
+atom_style full
+pair_style vashishta
+neighbor 1.0 bin
+neigh_modify delay 1
+
+read_data generate.data
+
+pair_coeff * * SiO.1990.vashishta Si O
+
+dump mydmp all custom 500 trajectory.lammpstrj id type x y z
+
+
+thermo 250
+thermo_style custom step temp etotal vol density
+
+
+timestep 0.001
+fix nvt1 all nvt temp 300 300 0.1
+fix mydef all deform 1 x erate 0.005
+run 50000
+
+write_data cracking.data

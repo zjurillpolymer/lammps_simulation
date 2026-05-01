@@ -1,0 +1,41 @@
+units real
+atom_style full
+
+read_data deform-mod.data
+displace_atoms all move -12 0 0 
+
+pair_style reaxff NULL safezone 3.0 mincap 150
+pair_coeff * * ffield.reax.CHOFe Si O H
+fix myqeq all qeq/reaxff 1 0.0 10.0 1.0e-6 reaxff maxiter 400
+
+molecule h2omol water.mol
+create_atoms 0 random 20 305672 NULL overlap 2.6 maxtry 50 mol h2omol 45585
+
+
+group grpSi type Si
+group grpO type O
+group grpH type H
+variable qSi equal charge(grpSi)/count(grpSi)
+variable qO equal charge(grpO)/count(grpO)
+variable qH equal charge(grpH)/(count(grpH)+1e-10)
+
+thermo 5
+thermo_style custom step temp etotal press v_qSi v_qO v_qH
+
+dump mydmp all custom 50 trajectory.lammpstrj id type x y z
+
+
+fix myspec all reaxff/species 5 1 5 decorate.species element Si O H
+
+fix mynvt all nvt temp 300.0 300.0 100
+timestep 0.5
+
+label loop
+variable a loop 10
+
+variable seed equal 35672+${a}
+
+run 2000
+
+next a
+jump SELF loop
