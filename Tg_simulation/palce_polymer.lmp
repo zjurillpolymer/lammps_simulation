@@ -34,7 +34,9 @@ fix 1 all npt temp 500 500 100 iso 1 1 1000
 run 100000
 
 # 降温阶段: 逐级降温测量 Tg
-variable T index 500 480 460 440 420 400 380 360 340 320 300 280 260 240 220 200 180 160 140 120 100
+# 仅保留 9 个关键点，覆盖 100K-400K
+# 注意：Tg 预计在 150K-200K 之间出现转折
+variable T index 400 350 300 250 200 150 125 100
 variable dens equal density
 
 label loop
