@@ -1,1 +1,1 @@
-# Record the process of learning Lammps.
+# Record the process of learning and using Lammps.

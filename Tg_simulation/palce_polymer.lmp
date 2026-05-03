@@ -1,0 +1,50 @@
+units real
+atom_style full
+
+read_data /Users/arcadio/lammps_simulation/Tg_simulation/build_pe_melt.data
+
+pair_style lj/cut 14.0
+bond_style harmonic
+angle_style harmonic
+dihedral_style opls
+special_bonds lj 0.0 0.0 0.5
+
+# Pair: CH2(1) 和 CH3(2) 的 LJ 参数 (TraPPE-UA)
+pair_coeff 1 1 0.0914 3.95     # CH2
+pair_coeff 2 2 0.1947 3.75     # CH3
+
+# Bond: C-C 键
+bond_coeff 1 450.0 1.54
+bond_coeff 2 450.0 1.54
+
+# Angle: C-C-C 角
+angle_coeff 1 62.5 114.0
+angle_coeff 2 62.5 114.0
+
+# Dihedral: OPLS 参数 (TraPPE-UA)
+dihedral_coeff 1 1.411 -0.271 3.145 0.0   # CH2-CH2-CH2-CH2
+dihedral_coeff 2 1.411 -0.271 3.145 0.0   # 链端
+
+# 压缩阶段: 高压 NPT 压缩盒子至合理密度
+fix 1 all npt temp 500 500 100 iso 100 100 1000
+run 50000
+
+# 弛豫阶段: 常压平衡
+fix 1 all npt temp 500 500 100 iso 1 1 1000
+run 100000
+
+# 降温阶段: 逐级降温测量 Tg
+variable T index 500 480 460 440 420 400 380 360 340 320 300 280 260 240 220 200 180 160 140 120 100
+variable dens equal density
+
+label loop
+fix 1 all npt temp ${T} ${T} 100 iso 1 1 1000
+
+# 记录体积/密度到文件
+fix 2 all ave/time 100 1000 100000 v_dens file density.dat append
+thermo_style custom step temp density vol
+run 100000
+unfix 1
+unfix 2
+next T
+jump SELF loop
