@@ -38,7 +38,7 @@ run 100000
 # 注意：Tg 预计在 150K-200K 之间出现转折
 variable T index 400 350 300 250 200 150 125 100
 variable dens equal density
-
+dump 1 all atom 1000 dump_pe_traj.lammpstrj
 label loop
 fix 1 all npt temp ${T} ${T} 100 iso 1 1 1000
 
