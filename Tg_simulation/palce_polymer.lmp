@@ -42,11 +42,10 @@ dump 1 all atom 1000 dump_pe_traj.lammpstrj
 label loop
 fix 1 all npt temp ${T} ${T} 100 iso 1 1 1000
 
-# 记录体积/密度到文件
-fix 2 all ave/time 100 1000 100000 v_dens file append density.dat
+# 记录密度到文件
 thermo_style custom step temp density vol
 run 100000
+print "${T} ${dens}" append density.dat screen no
 unfix 1
-unfix 2
 next T
 jump SELF loop
