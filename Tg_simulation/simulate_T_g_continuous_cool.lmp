@@ -48,7 +48,8 @@ thermo_style custom step temp density vol
 thermo 1000
 
 # 连续降温: 从 500K 到 100K, NPT (1 atm)
-fix 2 all npt temp 500 100 100 iso 1 1 1000
+unfix 1
+fix 1 all npt temp 500 100 100 iso 1 1 1000
 
 # 每 5000 步保存一次轨迹 (可选, 用于可视化)
 dump 1 all custom 5000 dump_continuous_cool.lammpstrj id mol type x y z
