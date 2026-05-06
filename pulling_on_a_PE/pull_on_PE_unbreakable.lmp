@@ -1,0 +1,57 @@
+units real
+atom_style full
+
+read_data /Users/arcadio/lammps_simulation/Tg_simulation/build_pe_melt.data
+
+pair_style lj/cut 14.0
+bond_style harmonic
+angle_style harmonic
+dihedral_style opls
+special_bonds lj 0.0 0.0 0.5
+
+
+pair_coeff 1 1 0.0914 3.95     
+pair_coeff 2 2 0.1947 3.75     
+
+bond_coeff 1 450.0 1.54
+bond_coeff 2 450.0 1.54
+angle_coeff 1 62.5 114.0
+angle_coeff 2 62.5 114.0
+dihedral_coeff 1 1.411 -0.271 3.145 0.0
+dihedral_coeff 2 1.411 -0.271 3.145 0.0
+
+
+fix 1 all npt temp 500 500 100 iso 100 100 1000
+run 30000
+unfix 1
+
+# 修正点1: 使用 aniso 让盒子形状自然松弛，避免各向同性强制膨胀导致的原子重叠
+fix 1 all npt temp 300 300 100 aniso 1 1 1000
+run 20000
+unfix 1
+
+# 额外平衡：确保应力完全释放
+fix 2 all npt temp 300 300 100 aniso 1 1 1000
+run 20000
+unfix 2
+
+reset_timestep 0
+
+
+fix 3 all npt temp 300 300 100 y 1.0 1.0 1000 z 1.0 1.0 1000
+
+fix 4 all deform 1 x erate 0.00001 units box remap x remap v                                                                                              
+compute p all pressure thermo_temp
+variable px equal c_p[1]                                                                                                                                 
+variable py equal c_p[2]                                                                                                                                 
+variable pz equal c_p[3] 
+thermo_style custom step temp vol lx ly lz c_p[1] c_p[2] c_p[3]
+thermo 1000
+
+fix 5x all ave/time 100 10 1000 v_px file stress_px.dat mode scalar                                                                                      
+fix 5y all ave/time 100 10 1000 v_py file stress_py.dat mode scalar                                                                                      
+fix 5z all ave/time 100 10 1000 v_pz file stress_pz.dat mode scalar 
+
+dump 1 all custom 500 dump_pe_tensile.lammpstrj id mol type x y z
+
+run 50000
