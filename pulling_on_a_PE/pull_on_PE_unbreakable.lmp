@@ -27,12 +27,12 @@ unfix 1
 
 # 修正点1: 使用 aniso 让盒子形状自然松弛，避免各向同性强制膨胀导致的原子重叠
 fix 1 all npt temp 300 300 100 aniso 1 1 1000
-run 20000
+run 200
 unfix 1
 
 # 额外平衡：确保应力完全释放
 fix 2 all npt temp 300 300 100 aniso 1 1 1000
-run 20000
+run 200
 unfix 2
 
 reset_timestep 0
@@ -40,7 +40,7 @@ reset_timestep 0
 
 fix 3 all npt temp 300 300 100 y 1.0 1.0 1000 z 1.0 1.0 1000
 
-fix 4 all deform 1 x erate 0.00001 units box remap x remap v                                                                                              
+fix 4 all deform 1 x erate 0.001 units box remap x remap v                                                                                              
 compute p all pressure thermo_temp
 variable px equal c_p[1]                                                                                                                                 
 variable py equal c_p[2]                                                                                                                                 
@@ -52,6 +52,6 @@ fix 5x all ave/time 100 10 1000 v_px file stress_px.dat mode scalar
 fix 5y all ave/time 100 10 1000 v_py file stress_py.dat mode scalar                                                                                      
 fix 5z all ave/time 100 10 1000 v_pz file stress_pz.dat mode scalar 
 
-dump 1 all custom 500 dump_pe_tensile.lammpstrj id mol type x y z
+dump 1 all custom 500 dump_pe_unbreaktensile.lammpstrj id mol type x y z
 
-run 50000
+run 500

@@ -20,15 +20,15 @@ dihedral_coeff 1 1.411 -0.271 3.145 0.0
 dihedral_coeff 2 1.411 -0.271 3.145 0.0
 
 fix 1 all npt temp 500 500 100 iso 100 100 1000
-run 30000
+run 15000
 unfix 1
 
 fix 1 all npt temp 300 300 100 aniso 1 1 1000
-run 20000
+run 200
 unfix 1
 
 fix 2 all npt temp 300 300 100 aniso 1 1 1000
-run 20000
+run 200
 unfix 2
 
 reset_timestep 0
@@ -38,7 +38,7 @@ fix bondbreak1 all bond/break 10 1 4.5
 fix bondbreak2 all bond/break 10 2 4.5
 
 fix 3 all npt temp 300 300 100 y 1.0 1.0 1000 z 1.0 1.0 1000
-fix 4 all deform 1 x erate 0.00001 units box remap x remap v
+fix 4 all deform 1 x erate 0.001 units box remap x remap v
 
 compute p all pressure thermo_temp
 variable px equal c_p[1]
@@ -48,6 +48,6 @@ variable pz equal c_p[3]
 thermo_style custom step temp vol lx ly lz c_p[1] c_p[2] c_p[3]
 thermo 1000
 
-dump 1 all custom 500 dump_pe_tensile.lammpstrj id mol type x y z
+dump 1 all custom 500 dump_pe_breaktensile.lammpstrj id mol type x y z
 
-run 50000
+run 5000
