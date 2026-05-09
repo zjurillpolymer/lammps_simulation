@@ -1,0 +1,84 @@
+# Li+ Brownian motion in silica glass at 1500K, 100000 steps
+# Force field: Pedone Buckingham potential (JPCB 110, 11780, 2006)
+# Usage: lmp -in run.lmp           (after running generate_silica.lmp)
+#
+# Output: trajectory.lammpstrj     (full system, every 500 steps)
+#         trajectory_li.lammpstrj  (Li+ only, every 10 steps)
+#         final.data               (final structure)
+#         MSD printed to screen
+
+units           metal
+atom_style      charge
+boundary        p p p
+
+# ============================================================
+# 1. Read silica glass from generate_silica.lmp
+#    (200 Si type 1 + 400 O type 2)
+# ============================================================
+read_data       silica_3types.data
+
+# Insert Li+ at the center (type 3 exists in data file header)
+create_atoms    3 single 0.0 0.0 0.0 units box
+
+# ============================================================
+# 2. Force field: Pedone Buckingham + Coulomb
+#    E(r) = A*exp(-r/rho) - C/r^6 + q_i*q_j/r  [cutoff 10 A]
+# ============================================================
+pair_style      buck/coul/long 10.0
+pair_coeff      1 2 1283.907  0.32052  10.66158    # Si-O
+pair_coeff      2 2 1844.745  0.34364 192.58       # O-O
+pair_coeff      1 1    0.0    1.0      0.0         # Si-Si (Coulomb only)
+pair_coeff      3 2  923.508  0.30364   0.0        # Li-O
+pair_coeff      3 1    0.0    1.0       0.0        # Li-Si (Coulomb only)
+pair_coeff      3 3    0.0    1.0       0.0        # Li-Li (Coulomb only)
+kspace_style    ewald 1e-5
+
+neighbor        2.0 bin
+neigh_modify    every 1 delay 5
+
+# ============================================================
+# 3. Equilibrate with new potential (short run)
+# ============================================================
+velocity        all create 1500.0 48291 dist gaussian
+fix             1 all nvt temp 1500.0 1500.0 0.1
+timestep        0.001
+thermo          500
+thermo_style    custom step temp etotal press vol density
+run             10000
+
+# ============================================================
+# 4. Production: Brownian motion at 1500K, 100000 steps
+# ============================================================
+reset_timestep  0
+
+group           Li type 3
+
+# Trajectory output
+dump            alltraj all custom 500 trajectory.lammpstrj id type x y z
+dump            litraj Li custom 10 trajectory_li.lammpstrj id type x y z
+
+# MSD of Li+ ion
+compute         msdLi Li msd
+
+thermo          1000
+thermo_style    custom step temp etotal press vol density c_msdLi[4]
+
+run             100000
+
+# ============================================================
+# 5. Summary
+# ============================================================
+variable        dLi equal c_msdLi[4]
+variable        D equal c_msdLi[4]/(600.0)
+print           ""
+print           "========== Brownian Motion Summary =========="
+print           "Temperature:       1500 K"
+print           "Total steps:       100000"
+print           "Timestep:          0.001 ps"
+print           "Total time:        100 ps"
+print           "Li+ MSD:           ${dLi} A^2"
+print           "Diffusion coeff D: ${D} A^2/ps"
+print           "=============================================="
+print           ""
+
+write_data      final.data

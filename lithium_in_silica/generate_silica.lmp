@@ -1,0 +1,76 @@
+# Generate amorphous silica glass via Vashishta melt-quench
+# Output: silica.data (readable by run.lmp)
+# Uses LAMMPS built-in potentials
+
+units           metal
+atom_style      charge
+boundary        p p p
+
+# ============================================================
+# 1. Create initial structure: random Si + O with proper density
+#    Final: ~200 Si + 400 O, box ~21 A
+#    Vashishta handles short-range repulsion, so no overlap issue
+# ============================================================
+region          box block -10.5 10.5 -10.5 10.5 -10.5 10.5
+create_box      2 box
+
+mass            1   28.0855          # Si
+mass            2   15.9994          # O
+
+# Random placement (Vashishta has strong short-range repulsion)
+create_atoms    1 random 200 58291 box
+create_atoms    2 random 400 13892 box
+
+# Assign charges for writing to data file
+set             type 1 charge 2.4
+set             type 2 charge -1.2
+
+# ============================================================
+# 2. Vashishta potential for SiO2
+# ============================================================
+pair_style      vashishta
+pair_coeff      * * /opt/homebrew/Cellar/lammps/20250722-update3/share/lammps/potentials/SiO.1990.vashishta Si O
+
+neighbor        2.0 bin
+neigh_modify    every 1 delay 5
+
+# ============================================================
+# 3. Minimization (Vashishta is well-behaved at short range)
+# ============================================================
+minimize        1.0e-6 1.0e-8 100 1000
+
+# ============================================================
+# 4. Melt at 6000K
+# ============================================================
+velocity        all create 6000.0 49281 dist gaussian
+fix             1 all nvt temp 6000.0 6000.0 0.1
+timestep        0.001
+thermo          500
+thermo_style    custom step temp etotal press vol density
+run             20000
+unfix           1
+
+# ============================================================
+# 5. Quench to 1500K
+# ============================================================
+fix             1 all nvt temp 6000.0 1500.0 0.5
+run             30000
+unfix           1
+
+# ============================================================
+# 6. Equilibrate at 1500K
+# ============================================================
+fix             1 all nvt temp 1500.0 1500.0 0.1
+run             20000
+unfix           1
+
+# ============================================================
+# 7. Write data file (keep Pedone-compatible charges)
+# ============================================================
+# Re-assign charges to Pedone values (Vashishta may have modified them)
+set             type 1 charge 2.4
+set             type 2 charge -1.2
+
+write_data      silica.data
+
+print           "Silica glass generated: silica.data (200 Si + 400 O)"
