@@ -1,0 +1,120 @@
+# LAMMPS parameters created by EMC v9.4.4, build Jul 31 2025 20:33:47
+
+# Variables
+
+variable	seed		index	-1
+variable	ntotal		index	6040
+variable	fshape		index	1
+variable	output		index	pure_pp
+variable	field		index	trappe/2014/trappe-ua
+variable	location	index	~/emc/v9.4.4/field/
+variable	nav		index	0.6022141179
+variable	temperature	index	300
+variable	radius		index	5
+variable	nrelax		index	100
+variable	weight_nonbond	index	0.0001
+variable	weight_bond	index	0.0001
+variable	weight_focus	index	1
+variable	cutoff		index	14
+variable	charge_cutoff	index	14
+variable	kappa		index	4
+variable	density1	index	0.035
+variable	lprevious	index	0
+variable	lphase		index	159.023409506
+variable	f_polymer	index	1
+variable	chem_pe_monomer	index	*CC*
+variable	chem_pp_monomer	index	*CC(C)*
+variable	chem_terminator	index	*C
+variable	lg_pe_monomer	index	2
+variable	lg_pp_monomer	index	3
+variable	lg_terminator	index	1
+variable	l_polymer	index	302
+variable	mg_pe_monomer	index	28.0536
+variable	mg_pp_monomer	index	42.0804
+variable	mg_terminator	index	15.0347
+variable	m_polymer	index	4238.1094
+variable	norm		index	302
+variable	n_polymer	index	20
+variable	mtotal		index	84762.188
+variable	vtotal		index	4021454.70858
+variable	nphase1		index	6040
+variable	mphase1		index	84762.188
+variable	vphase1		index	4021454.70858
+variable	lbox		index	159.023409506
+variable	lphase1		index	159.023409506
+variable	lxx		index	159.023409506
+variable	lyy		index	159.023409506
+variable	lzz		index	159.023409506
+variable	lzy		index	0
+variable	lzx		index	0
+variable	lyx		index	0
+variable	nl_polymer	index	20
+
+# Types
+
+variable	type_c4h	index	1
+variable	type_c4h2	index	2
+variable	type_c4h3	index	3
+
+variable	type_bond_c4h_c4h2 index	1
+variable	type_bond_c4h_c4h3 index	2
+variable	type_bond_c4h2_c4h3 index	3
+
+variable	type_angle_c4h_c4h2_c4h index	1
+variable	type_angle_c4h_c4h2_c4h3 index	2
+variable	type_angle_c4h2_c4h_c4h2 index	3
+variable	type_angle_c4h2_c4h_c4h3 index	4
+variable	type_angle_c4h3_c4h_c4h3 index	5
+
+# Clusters
+
+variable	n0_polymer	index	1
+variable	n1_polymer	index	20
+variable	nl_polymer	index	20
+
+# Flags
+
+variable	flag_charged	index	0
+
+# Masses
+
+mass		1    13.01890  # c4h
+mass		2    14.02680  # c4h2
+mass		3    15.03470  # c4h3
+
+# Potentials
+
+pair_style	lj/cut ${cutoff}  # 14
+bond_style	harmonic
+angle_style	harmonic
+dihedral_style	multi/harmonic
+pair_modify	mix arithmetic tail yes
+special_bonds	lj 0 0 0 coul 0 0 0.5
+
+# Pair Coeffs
+
+pair_coeff	1 1    0.01987    4.65000  # c4h,c4h
+pair_coeff	2 2    0.09141    3.95000  # c4h2,c4h2
+pair_coeff	3 3    0.19475    3.75000  # c4h3,c4h3
+
+# Bond Coeffs
+
+bond_coeff	1  260.00013    1.54000  # c4h,c4h2
+bond_coeff	2  260.00013    1.54000  # c4h,c4h3
+bond_coeff	3  260.00013    1.54000  # c4h2,c4h3
+
+# Angle Coeffs
+
+angle_coeff	1   62.10020  114.00000  # c4h,c4h2,c4h
+angle_coeff	2   62.10020  114.00000  # c4h,c4h2,c4h3
+angle_coeff	3   62.10020  112.00000  # c4h2,c4h,c4h2
+angle_coeff	4   62.10020  112.00000  # c4h2,c4h,c4h3
+angle_coeff	5   62.10020  112.00000  # c4h3,c4h,c4h3
+
+# Dihedral Coeffs
+
+dihedral_coeff	1    0.28652   -1.77871    0.44454    3.50758    0.00000  # c4h,c4h2,c4h,c4h2
+dihedral_coeff	2    0.28652   -1.77871    0.44454    3.50758    0.00000  # c4h,c4h2,c4h,c4h3
+dihedral_coeff	3    0.28652   -1.77871    0.44454    3.50758    0.00000  # c4h2,c4h,c4h2,c4h3
+dihedral_coeff	4    0.28652   -1.77871    0.44454    3.50758    0.00000  # c4h3,c4h,c4h2,c4h3
+

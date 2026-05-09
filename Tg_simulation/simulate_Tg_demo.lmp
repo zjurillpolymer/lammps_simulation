@@ -1,0 +1,42 @@
+# Quick demo: PE-co-PP copolymer Tg (short)
+# Continuous cooling: 500K → 100K
+# Shortened steps for testing (~1/100 of full run)
+# Usage: lmp -in simulate_Tg_demo.lmp -var data pp50.data -var params pp50.params
+
+variable data    index /Users/arcadio/lammps_simulation/Tg_simulation/pp50.data
+variable params  index /Users/arcadio/lammps_simulation/Tg_simulation/pp50.params
+variable project index tg_demo
+variable cutoff  index 14
+
+log		log_${project}.lammps
+
+units		real
+atom_style	full
+boundary	p p p
+
+pair_style	lj/cut ${cutoff}
+bond_style	harmonic
+angle_style	harmonic
+dihedral_style	multi/harmonic
+special_bonds	lj 0 0 0 coul 0 0 0.5
+pair_modify	mix arithmetic tail yes
+
+read_data	${data}
+include		${params}
+
+thermo		1000
+thermo_style	custom step temp density vol press
+
+# Quick NPT equilibrium at 500K (10k steps)
+fix 1 all npt temp 500 500 100 iso 1 1 1000
+run 10000
+
+# Quick cooling (10k steps, from 500K to 100K)
+unfix 1
+reset_timestep 0
+fix 1 all npt temp 500 100 100 iso 1 1 1000
+dump 1 all custom 500 ${project}_dump.lammpstrj id mol type x y z
+run 10000
+
+write_data ${project}_final.data
+print "Demo complete!"
